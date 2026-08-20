@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+contents: write
 
 jobs:
   build:
@@ -65,7 +65,7 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
           tag_name: v1.0.0
-          name: "ParentGuard App Release v1.0.0"
+          name: "ParentGuard App Release v1.0त.0"
           body: "Official Android APK Build for ParentGuard App."
           files: build-apks/ParentGuard.apk
           draft: false

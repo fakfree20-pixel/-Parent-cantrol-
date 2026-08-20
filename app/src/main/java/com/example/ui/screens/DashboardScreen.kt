@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,24 +27,37 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Rule
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.SmartDisplay
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Card
@@ -69,11 +83,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
@@ -87,41 +103,26 @@ import com.example.data.model.SmsMessageItem
 import com.example.data.model.WhatsAppConversation
 import com.example.data.model.YouTubeWatchItem
 import com.example.ui.components.AddBonusTimeDialog
+import com.example.ui.components.AlbumsSafetyDialog
 import com.example.ui.components.AntiUninstallProtectionDialog
 import com.example.ui.components.AppNotificationsFeedDialog
+import com.example.ui.components.BrowserSafetyDialog
 import com.example.ui.components.CallHistoryDialog
+import com.example.ui.components.CheckPermissionsDialog
 import com.example.ui.components.ChildAvatarCircle
 import com.example.ui.components.DetailedUsageReportDialog
-import com.example.ui.components.FeatureActionPhotoCard
-import com.example.ui.components.FeatureHeroBanner
+import com.example.ui.components.HiddenChildAppGuideDialog
 import com.example.ui.components.InstantLockDialog
 import com.example.ui.components.LiveLocationDetailDialog
+import com.example.ui.components.LivePaintingDialog
 import com.example.ui.components.OneWayAudioDialog
 import com.example.ui.components.PairDeviceDialog
 import com.example.ui.components.RemoteCameraDialog
 import com.example.ui.components.ScreenMirroringDialog
-import com.example.ui.components.ScreenTimeGauge
 import com.example.ui.components.SmsTrackingDialog
+import com.example.ui.components.SocialAppDetectionDialog
 import com.example.ui.components.WhatsAppChatTrackerDialog
 import com.example.ui.components.YouTubeMonitoringDialog
-import com.example.ui.components.formatMinutes
-import com.example.ui.theme.EarthAmber100
-import com.example.ui.theme.EarthAmber600
-import com.example.ui.theme.MossGreen600
-import com.example.ui.theme.NaturalBg
-import com.example.ui.theme.NaturalBorder
-import com.example.ui.theme.NaturalCardBg
-import com.example.ui.theme.NaturalGreen100
-import com.example.ui.theme.NaturalGreen700
-import com.example.ui.theme.NaturalGreen900
-import com.example.ui.theme.NaturalSurface
-import com.example.ui.theme.NaturalSurfaceVariant
-import com.example.ui.theme.NaturalTextPrimary
-import com.example.ui.theme.NaturalTextSecondary
-import com.example.ui.theme.NaturalTextTertiary
-import com.example.ui.theme.Terracotta100
-import com.example.ui.theme.Terracotta600
-import com.example.ui.theme.Terracotta700
 
 @Composable
 fun DashboardScreen(
@@ -150,6 +151,7 @@ fun DashboardScreen(
     onClearYouTubeHistory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // Dialog States
     var showLockDialog by remember { mutableStateOf(false) }
     var showBonusDialog by remember { mutableStateOf(false) }
     var showCameraDialog by remember { mutableStateOf(false) }
@@ -166,14 +168,62 @@ fun DashboardScreen(
     var showCallHistoryDialog by remember { mutableStateOf(false) }
     var showAntiUninstallDialog by remember { mutableStateOf(false) }
 
-    val usedMinutesToday = apps.sumOf { it.usageTodayMinutes }
-    val totalLimitMinutes = child.weekdayLimitMinutes + child.bonusMinutesToday
-    val flaggedWhatsAppCount = whatsAppConversations.count { it.isFlaggedSuspicious }
-    val flaggedSmsCount = smsMessages.count { it.isSuspicious }
-    val flaggedYouTubeCount = youTubeWatchHistory.count { it.isFlagged }
-    val flaggedCallsCount = callLogs.count { it.isSuspicious }
+    // FlashGet New Feature Dialogs
+    var showLivePaintingDialog by remember { mutableStateOf(false) }
+    var showCheckPermissionsDialog by remember { mutableStateOf(false) }
+    var showSocialAppDialog by remember { mutableStateOf(false) }
+    var showAlbumsSafetyDialog by remember { mutableStateOf(false) }
+    var showBrowserSafetyDialog by remember { mutableStateOf(false) }
+    var showHiddenGuideDialog by remember { mutableStateOf(false) }
 
-    // Modals
+    // Active Dialogs Integration
+    if (showLivePaintingDialog) {
+        LivePaintingDialog(
+            child = child,
+            isHindi = isHindi,
+            onDismiss = { showLivePaintingDialog = false }
+        )
+    }
+
+    if (showCheckPermissionsDialog) {
+        CheckPermissionsDialog(
+            child = child,
+            isHindi = isHindi,
+            onDismiss = { showCheckPermissionsDialog = false }
+        )
+    }
+
+    if (showSocialAppDialog) {
+        SocialAppDetectionDialog(
+            child = child,
+            isHindi = isHindi,
+            onDismiss = { showSocialAppDialog = false }
+        )
+    }
+
+    if (showAlbumsSafetyDialog) {
+        AlbumsSafetyDialog(
+            child = child,
+            isHindi = isHindi,
+            onDismiss = { showAlbumsSafetyDialog = false }
+        )
+    }
+
+    if (showBrowserSafetyDialog) {
+        BrowserSafetyDialog(
+            child = child,
+            isHindi = isHindi,
+            onDismiss = { showBrowserSafetyDialog = false }
+        )
+    }
+
+    if (showHiddenGuideDialog) {
+        HiddenChildAppGuideDialog(
+            isHindi = isHindi,
+            onDismiss = { showHiddenGuideDialog = false }
+        )
+    }
+
     if (showSmsDialog) {
         SmsTrackingDialog(
             child = child,
@@ -193,6 +243,7 @@ fun DashboardScreen(
             onClearHistory = onClearYouTubeHistory
         )
     }
+
     if (showLockDialog) {
         InstantLockDialog(
             childName = child.name,
@@ -228,6 +279,7 @@ fun DashboardScreen(
     if (showScreenMirrorDialog) {
         ScreenMirroringDialog(
             child = child,
+            apps = apps,
             isHindi = isHindi,
             onInstantLock = {
                 onInstantLockToggle(true, "Remote Lock from Screen Mirror", 30)
@@ -290,9 +342,7 @@ fun DashboardScreen(
             notifications = appNotifications,
             isHindi = isHindi,
             onClearAll = onClearNotifications,
-            onOpenWhatsAppMonitor = {
-                showWhatsAppDialog = true
-            },
+            onOpenWhatsAppMonitor = { showWhatsAppDialog = true },
             onDismiss = { showNotificationsDialog = false }
         )
     }
@@ -317,28 +367,28 @@ fun DashboardScreen(
         )
     }
 
+    // MAIN FLASHGET CONTROL DASHBOARD
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(NaturalBg)
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 10.dp, bottom = 32.dp),
+            .background(Color(0xFFF4F6FB)),
+        contentPadding = PaddingValues(bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. DEVICE TOP BAR & LIVE STATUS
+        // 1. TOP PURPLE DEVICE HEADER (FlashGet Style)
         item {
-            Card(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(3.dp, RoundedCornerShape(24.dp))
-                    .border(1.dp, NaturalBorder, RoundedCornerShape(24.dp)),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = NaturalSurface)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xFF6C5CE7), Color(0xFF5B48D9))
+                        )
+                    )
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp)
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -348,75 +398,66 @@ fun DashboardScreen(
                             .clickable { showProfileDropdown = true }
                             .weight(1f)
                     ) {
-                        ChildAvatarCircle(
-                            avatarIndex = child.avatarIndex,
-                            name = child.name,
-                            size = 44.dp
-                        )
+                        // User Avatar
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.25f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ChildAvatarCircle(
+                                avatarIndex = child.avatarIndex,
+                                name = child.name,
+                                size = 40.dp
+                            )
+                        }
 
                         Spacer(modifier = Modifier.width(12.dp))
 
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = child.deviceModel.ifEmpty { "${child.name}'s Phone" },
+                                    text = child.deviceModel.ifEmpty { "Infinix X6823C" },
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    color = NaturalTextPrimary
+                                    fontSize = 17.sp,
+                                    color = Color.White
                                 )
-                                Spacer(modifier = Modifier.width(2.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Icon(
                                     imageVector = Icons.Default.ArrowDropDown,
                                     contentDescription = "Switch Device",
-                                    tint = NaturalTextSecondary,
-                                    modifier = Modifier.size(18.dp)
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(2.dp))
 
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                // Live Online Status Indicator with animated pulse feel
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(8.dp)
+                                        .size(7.dp)
                                         .clip(CircleShape)
-                                        .background(if (child.isDeviceOnline) NaturalGreen700 else Color.Gray)
+                                        .background(if (child.isDeviceOnline) Color(0xFFF39C12) else Color.LightGray)
                                 )
-
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = if (child.isDeviceOnline) {
-                                        if (isHindi) "कनेक्टेड (Online)" else "Connected (Online)"
-                                    } else {
-                                        if (isHindi) "ऑफलाइन" else "Offline"
-                                    },
-                                    fontSize = 11.sp,
-                                    color = if (child.isDeviceOnline) NaturalGreen700 else NaturalTextSecondary,
-                                    fontWeight = FontWeight.SemiBold
+                                    text = if (child.isDeviceOnline) "Unknown" else "Offline",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.9f)
                                 )
-
-                                Text(text = "•", fontSize = 11.sp, color = NaturalTextTertiary)
-
-                                // Battery indicator with colored text
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = if (child.batteryPercent <= 20) Terracotta100 else NaturalGreen100
-                                ) {
-                                    Text(
-                                        text = "🔋 ${child.batteryPercent}%",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (child.batteryPercent <= 20) Terracotta700 else NaturalGreen700,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "🔋 ${child.batteryPercent}%",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         }
 
-                        // Child selector dropdown
+                        // Dropdown
                         DropdownMenu(
                             expanded = showProfileDropdown,
                             onDismissRequest = { showProfileDropdown = false }
@@ -429,7 +470,7 @@ fun DashboardScreen(
                                             Spacer(modifier = Modifier.width(10.dp))
                                             Column {
                                                 Text(profile.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                                Text("${profile.deviceModel} • 🔋 ${profile.batteryPercent}%", fontSize = 11.sp, color = NaturalTextSecondary)
+                                                Text("${profile.deviceModel} • 🔋 ${profile.batteryPercent}%", fontSize = 11.sp, color = Color.Gray)
                                             }
                                         }
                                     },
@@ -442,861 +483,454 @@ fun DashboardScreen(
                         }
                     }
 
-                    // Pair New Device Action button
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = NaturalGreen100,
-                        modifier = Modifier.clickable { showPairDeviceDialog = true }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add Device",
-                                tint = NaturalGreen700,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (isHindi) "+ डिवाइस" else "+ Device",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = NaturalGreen700
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. HERO FAMILY DIGITAL BANNER & SECURITY PULSE
-        item {
-            FeatureHeroBanner(
-                imageRes = R.drawable.family_screen_hero_1787112118626,
-                title = if (isHindi) "स्मार्ट पैरेंटल सुरक्षा" else "ParentGuard AI Protection",
-                subtitle = if (isHindi) "SMS, यूट्यूब, लाइव चैट व लोकेशन की रीयल-टाइम सुरक्षा" else "24/7 Shield for SMS, YouTube, WhatsApp & GPS Radar",
-                badgeText = if (isHindi) "लाइव सुरक्षा 24/7" else "24/7 LIVE SHIELD",
-                badgeColor = NaturalGreen700
-            )
-        }
-
-        // 3. KEY DIGITAL FEATURES WITH 3D PHOTOS (SMS ट्रैकिंग, यूट्यूब वीडियो)
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // SMS Tracker 3D Card
-                FeatureActionPhotoCard(
-                    imageRes = R.drawable.img_sms_chat_monitor_1787126196512,
-                    title = if (isHindi) "SMS ट्रैकिंग" else "SMS Tracker",
-                    subtitle = if (isHindi) "${smsMessages.size} संदेश • स्कैम गार्ड" else "${smsMessages.size} SMS • Scam Guard",
-                    tagText = if (flaggedSmsCount > 0) "! Alert" else "LIVE",
-                    tagColor = if (flaggedSmsCount > 0) Terracotta700 else NaturalGreen700,
-                    testTag = "dashboard_sms_tracker_card",
-                    onClick = { showSmsDialog = true },
-                    modifier = Modifier.weight(1f)
-                )
-
-                // YouTube Video Monitoring 3D Card
-                FeatureActionPhotoCard(
-                    imageRes = R.drawable.img_youtube_monitor_1787118779866,
-                    title = if (isHindi) "यूट्यूब वीडियो" else "YouTube Shield",
-                    subtitle = if (isHindi) "${youTubeWatchHistory.size} वीडियो • सेफ किड्स" else "${youTubeWatchHistory.size} Videos Screened",
-                    tagText = if (flaggedYouTubeCount > 0) "! Flagged" else "ACTIVE",
-                    tagColor = if (flaggedYouTubeCount > 0) Terracotta700 else Terracotta600,
-                    testTag = "dashboard_youtube_card",
-                    onClick = { showYouTubeDialog = true },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-        // 4. SECOND ROW 3D DIGITAL PHOTO CARDS (सुरक्षा लॉक & लोकेशन रडार)
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Anti-Uninstall Security Lock 3D Card
-                FeatureActionPhotoCard(
-                    imageRes = R.drawable.img_hero_security_1787118769835,
-                    title = if (isHindi) "सुरक्षा एडमिन लॉक" else "Anti-Uninstall Lock",
-                    subtitle = if (isHindi) (if (child.antiUninstallEnabled) "सुरक्षा सक्रिय है" else "असुरक्षित • चालू करें")
-                    else (if (child.antiUninstallEnabled) "Tamper Protected" else "Tap to Enable"),
-                    tagText = if (child.antiUninstallEnabled) "LOCKED" else "OFF",
-                    tagColor = if (child.antiUninstallEnabled) NaturalGreen700 else Color.Gray,
-                    testTag = "dashboard_anti_uninstall_card",
-                    onClick = { showAntiUninstallDialog = true },
-                    modifier = Modifier.weight(1f)
-                )
-
-                // GPS Location & Radar Safe Zones 3D Card
-                FeatureActionPhotoCard(
-                    imageRes = R.drawable.img_location_radar_1787126216872,
-                    title = if (isHindi) "लोकेशन रडार" else "GPS Radar & Zones",
-                    subtitle = if (isHindi) "${geofenceZones.size} सुरक्षित ज़ोन • लाइव" else "${geofenceZones.size} Geofence Zones",
-                    tagText = "GPS ON",
-                    tagColor = Color(0xFF0284C7),
-                    testTag = "dashboard_location_radar_card",
-                    onClick = { showLocationDialog = true },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-        // 3. WHATSAPP CHAT & APP NOTIFICATIONS TRACKER ROW
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // WhatsApp Chat Monitor Card
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .shadow(2.dp, RoundedCornerShape(22.dp))
-                        .border(
-                            1.dp,
-                            if (flaggedWhatsAppCount > 0) Terracotta600 else NaturalBorder,
-                            RoundedCornerShape(22.dp)
-                        )
-                        .clickable { showWhatsAppDialog = true },
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = NaturalSurface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(Color(0xFF128C7E), Color(0xFF25D366))
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Chat, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(22.dp))
-                            }
-
-                            if (flaggedWhatsAppCount > 0) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Terracotta100
-                                ) {
-                                    Text(
-                                        text = "! Alert",
-                                        color = Terracotta700,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                    )
-                                }
-                            } else {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Color(0xFFE8F8F0)
-                                ) {
-                                    Text(
-                                        text = "LIVE",
-                                        color = Color(0xFF128C7E),
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = if (isHindi) "व्हाट्सएप चैट" else "WhatsApp Chats",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = NaturalTextPrimary
-                        )
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        Text(
-                            text = if (isHindi) "${whatsAppConversations.size} संपर्क • मैसेजेस" else "${whatsAppConversations.size} Contacts Tracked",
-                            fontSize = 11.sp,
-                            color = NaturalTextSecondary
-                        )
-                    }
-                }
-
-                // All App Notifications Card
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .shadow(2.dp, RoundedCornerShape(22.dp))
-                        .border(1.dp, NaturalBorder, RoundedCornerShape(22.dp))
-                        .clickable { showNotificationsDialog = true },
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = NaturalSurface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(Color(0xFF4F46E5), Color(0xFF7C3AED))
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White, modifier = Modifier.size(22.dp))
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFFEEF2FF)
-                            ) {
-                                Text(
-                                    text = "${appNotifications.size} New",
-                                    color = Color(0xFF4F46E5),
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = if (isHindi) "ऐप नोटिफिकेशन" else "App Notifications",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = NaturalTextPrimary
-                        )
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        Text(
-                            text = if (isHindi) "रियल-टाइम फ़ीड सक्रिय" else "Real-time alerts active",
-                            fontSize = 11.sp,
-                            color = NaturalTextSecondary
-                        )
-                    }
-                }
-            }
-        }
-
-        // 4. CALL HISTORY TRACKER & ANTI-UNINSTALL TAMPER PROTECTION ROW
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Call History Tracker Card
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .shadow(2.dp, RoundedCornerShape(22.dp))
-                        .border(
-                            1.dp,
-                            if (flaggedCallsCount > 0) Terracotta600 else NaturalBorder,
-                            RoundedCornerShape(22.dp)
-                        )
-                        .clickable { showCallHistoryDialog = true },
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = NaturalSurface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(Color(0xFF0284C7), Color(0xFF0EA5E9))
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Call, contentDescription = "Call History", tint = Color.White, modifier = Modifier.size(22.dp))
-                            }
-
-                            if (flaggedCallsCount > 0) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Terracotta100
-                                ) {
-                                    Text(
-                                        text = "! Alert",
-                                        color = Terracotta700,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                    )
-                                }
-                            } else {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Color(0xFFE0F2FE)
-                                ) {
-                                    Text(
-                                        text = "${callLogs.size} Calls",
-                                        color = Color(0xFF0284C7),
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = if (isHindi) "कॉल हिस्ट्री" else "Call History",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = NaturalTextPrimary
-                        )
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        Text(
-                            text = if (isHindi) "ऑडियो रिकॉर्डिंग उपलब्ध" else "Audio Logs & Duration",
-                            fontSize = 11.sp,
-                            color = NaturalTextSecondary
-                        )
-                    }
-                }
-
-                // Anti-Uninstall Lock Card
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .shadow(2.dp, RoundedCornerShape(22.dp))
-                        .border(1.dp, NaturalBorder, RoundedCornerShape(22.dp))
-                        .clickable { showAntiUninstallDialog = true },
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = NaturalSurface)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(Color(0xFFD97706), Color(0xFFF59E0B))
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Security, contentDescription = "Security Lock", tint = Color.White, modifier = Modifier.size(22.dp))
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (child.antiUninstallEnabled) NaturalGreen100 else NaturalSurfaceVariant
-                            ) {
-                                Text(
-                                    text = if (child.antiUninstallEnabled) "LOCKED" else "OFF",
-                                    color = if (child.antiUninstallEnabled) NaturalGreen700 else NaturalTextSecondary,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = if (isHindi) "अनइंस्टॉल सुरक्षा" else "Anti-Uninstall Lock",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = NaturalTextPrimary
-                        )
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        Text(
-                            text = if (isHindi) "एडमिन लॉक सक्रिय" else "Tamper Protected",
-                            fontSize = 11.sp,
-                            color = if (child.antiUninstallEnabled) NaturalGreen700 else NaturalTextSecondary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-
-        // 5. FLASHGET USAGE REPORT SECTION WITH 3D BAR GRAPHIC
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(1.dp, RoundedCornerShape(20.dp))
-                    .border(1.dp, NaturalBorder, RoundedCornerShape(20.dp))
-                    .clickable { showUsageReportDialog = true },
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = NaturalSurface)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = if (isHindi) "उपयोग रिपोर्ट" else "Usage Report",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = NaturalTextPrimary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(Terracotta700)
-                            )
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = NaturalTextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (isHindi) "विस्तृत डेटा देखें (${formatMinutes(usedMinutesToday, isHindi)} आज उपयोग)"
-                            else "View Detailed Data (${formatMinutes(usedMinutesToday)} today)",
-                            fontSize = 12.sp,
-                            color = NaturalTextSecondary
-                        )
-                    }
-
-                    // 3D Chart Illustration Graphic
-                    Box(
+                    // Plus (+) Button to Add / Bind new device
+                    IconButton(
+                        onClick = { showPairDeviceDialog = true },
                         modifier = Modifier
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(NaturalGreen100),
-                        contentAlignment = Alignment.Center
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f))
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.Bottom,
-                            modifier = Modifier.padding(10.dp)
-                        ) {
-                            Box(modifier = Modifier.width(6.dp).height(18.dp).clip(RoundedCornerShape(3.dp)).background(NaturalGreen700))
-                            Box(modifier = Modifier.width(6.dp).height(34.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFF8B5CF6)))
-                            Box(modifier = Modifier.width(6.dp).height(24.dp).clip(RoundedCornerShape(3.dp)).background(EarthAmber600))
-                            Box(modifier = Modifier.width(6.dp).height(14.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFF06B6D4)))
-                        }
+                        Icon(Icons.Default.Add, contentDescription = "Add Device", tint = Color.White)
                     }
                 }
             }
         }
 
-        // 6. FLASHGET LIVE MONITORING SECTION (REMOTE CAMERA, SCREEN MIRRORING, ONE-WAY AUDIO)
+        // 2. SECTION: SNAPSHOT & RECORDING (FlashGet Section 1)
         item {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(1.dp, RoundedCornerShape(22.dp))
-                    .border(1.dp, NaturalBorder, RoundedCornerShape(22.dp)),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = NaturalSurface)
+                    .padding(horizontal = 14.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (isHindi) "लाइव निगरानी" else "Live Monitoring",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = NaturalTextPrimary
-                        )
-
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Monitoring Settings",
-                            tint = NaturalTextTertiary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        // 1. Remote Camera
-                        LiveMonitoringButton(
-                            icon = Icons.Default.PhotoCamera,
-                            label = if (isHindi) "रिमोट कैमरा" else "Remote Camera",
-                            iconTint = Color(0xFF3B82F6),
-                            bgTint = Color(0xFFEFF6FF),
-                            onClick = { showCameraDialog = true }
-                        )
-
-                        // 2. Screen Mirroring
-                        LiveMonitoringButton(
-                            icon = Icons.Default.ScreenShare,
-                            label = if (isHindi) "स्क्रीन मिररिंग" else "Screen Mirroring",
-                            iconTint = Color(0xFF8B5CF6),
-                            bgTint = Color(0xFFF5F3FF),
-                            onClick = { showScreenMirrorDialog = true }
-                        )
-
-                        // 3. One-Way Audio
-                        LiveMonitoringButton(
-                            icon = Icons.Default.Headphones,
-                            label = if (isHindi) "वन-वे ऑडियो" else "One-Way Audio",
-                            iconTint = Color(0xFF10B981),
-                            bgTint = Color(0xFFECFDF5),
-                            onClick = { showAudioDialog = true }
-                        )
-                    }
-                }
-            }
-        }
-
-        // 7. FLASHGET BLOCK ALL APPS SWITCH
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(1.dp, RoundedCornerShape(20.dp))
-                    .border(1.dp, NaturalBorder, RoundedCornerShape(20.dp)),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = NaturalSurface)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        // App Lock Cluster Icon
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (child.blockAllApps) Terracotta100 else NaturalSurfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (child.blockAllApps) Icons.Default.Lock else Icons.Default.LockOpen,
-                                contentDescription = null,
-                                tint = if (child.blockAllApps) Terracotta700 else NaturalGreen700,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column {
-                            Text(
-                                text = if (isHindi) "सभी ऐप्स ब्लॉक करें" else "Block All Apps",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = NaturalTextPrimary
-                            )
-                            Text(
-                                text = if (isHindi) "स्वीकृत ऐप्स के अलावा सभी ऐप बंद रहेंगे"
-                                else "All apps except for \"Allowed Apps\" will be blocked",
-                                fontSize = 11.sp,
-                                color = NaturalTextSecondary
-                            )
-                        }
-                    }
-
-                    Switch(
-                        checked = child.blockAllApps,
-                        onCheckedChange = { onToggleBlockAllApps(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Terracotta700,
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = NaturalBorder
-                        ),
-                        modifier = Modifier.testTag("block_all_apps_switch")
+                    Text(
+                        text = if (isHindi) "स्नैपशॉट और रिकॉर्डिंग" else "Snapshot & Recording",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFF1E1E2E)
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Row 1: Camera Recording, Screen Recording, Ambient Recording
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        FlashGetGridItem(
+                            title = if (isHindi) "कैमरा रिकॉर्डिंग" else "Camera Recording",
+                            icon = Icons.Default.Videocam,
+                            iconColor = Color(0xFF6C5CE7),
+                            hasPro = true,
+                            onClick = { showCameraDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "स्क्रीन रिकॉर्डिंग" else "Screen Recording",
+                            icon = Icons.Default.SmartDisplay,
+                            iconColor = Color(0xFF6C5CE7),
+                            hasPro = true,
+                            onClick = { showScreenMirrorDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "एम्बिएंट रिकॉर्डिंग" else "Ambient Recording",
+                            icon = Icons.Default.Mic,
+                            iconColor = Color(0xFF6C5CE7),
+                            hasPro = true,
+                            onClick = { showAudioDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Row 2: Camera Snapshot, Screen Snapshot
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        FlashGetGridItem(
+                            title = if (isHindi) "कैमरा स्नैपशॉट" else "Camera Snapshot",
+                            icon = Icons.Default.PhotoCamera,
+                            iconColor = Color(0xFF6C5CE7),
+                            hasPro = true,
+                            onClick = { showCameraDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "स्क्रीन स्नैपशॉट" else "Screen Snapshot",
+                            icon = Icons.Default.PhoneAndroid,
+                            iconColor = Color(0xFF6C5CE7),
+                            hasPro = true,
+                            onClick = { showScreenMirrorDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.weight(1f)) // Alignment placeholder
+                    }
                 }
             }
         }
 
-        // 8. FLASHGET LIVE LOCATION & MAP SNIPPET
+        // 3. SECTION: DEVICE ACTIVITY (FlashGet Section 2)
         item {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(1.dp, RoundedCornerShape(22.dp))
-                    .border(1.dp, NaturalBorder, RoundedCornerShape(22.dp))
-                    .clickable { showLocationDialog = true },
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = NaturalSurface)
+                    .padding(horizontal = 14.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = if (isHindi) "डिवाइस गतिविधि" else "Device Activity",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFF1E1E2E)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Row 1: Screen Time Limits, App Time Limits, App Rules
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = if (isHindi) "लाइव लोकेशन" else "Live Location",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = NaturalTextPrimary
+                        FlashGetGridItem(
+                            title = if (isHindi) "स्क्रीन टाइम सीमा" else "Screen Time Limits",
+                            icon = Icons.Default.HourglassBottom,
+                            iconColor = Color(0xFF4A69BD),
+                            hasPro = false,
+                            onClick = { showUsageReportDialog = true },
+                            modifier = Modifier.weight(1f)
                         )
-
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = "View Map",
-                            tint = NaturalTextSecondary,
-                            modifier = Modifier.size(18.dp)
+                        FlashGetGridItem(
+                            title = if (isHindi) "ऐप टाइम सीमा" else "App Time Limits",
+                            icon = Icons.Default.Widgets,
+                            iconColor = Color(0xFF4A69BD),
+                            hasPro = false,
+                            onClick = { showUsageReportDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "ऐप नियम" else "App Rules",
+                            icon = Icons.Default.Rule,
+                            iconColor = Color(0xFF4A69BD),
+                            hasPro = false,
+                            onClick = { showAntiUninstallDialog = true },
+                            modifier = Modifier.weight(1f)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
-                    // Simulated Map Container
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFE2EFE0)),
-                        contentAlignment = Alignment.Center
+                    // Row 2: Usage Logs, Live Painting, Check Permissions
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val w = size.width
-                            val h = size.height
-                            drawLine(Color.White, Offset(0f, h * 0.5f), Offset(w, h * 0.5f), strokeWidth = 10f)
-                            drawLine(Color.White, Offset(w * 0.65f, 0f), Offset(w * 0.65f, h), strokeWidth = 8f)
-                            drawCircle(NaturalGreen700.copy(alpha = 0.2f), radius = 40.dp.toPx(), center = Offset(w * 0.5f, h * 0.5f))
-                        }
-
-                        // Child marker pin
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.offset(y = (-4).dp)
-                        ) {
-                            ChildAvatarCircle(avatarIndex = child.avatarIndex, name = child.name, size = 26.dp)
-                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Terracotta700, modifier = Modifier.size(24.dp))
-                        }
-
-                        // Address overlay badge
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color.White.copy(alpha = 0.9f),
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(8.dp)
-                        ) {
-                            Text(
-                                text = child.locationAddress,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = NaturalTextPrimary,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                            )
-                        }
+                        FlashGetGridItem(
+                            title = if (isHindi) "उपयोग लॉग्स" else "Usage Logs",
+                            icon = Icons.Default.History,
+                            iconColor = Color(0xFF6C5CE7),
+                            hasPro = true,
+                            onClick = { showUsageReportDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "लाइव पेंटिंग" else "Live Painting",
+                            icon = Icons.Default.Brush,
+                            iconColor = Color(0xFFE84393),
+                            hasPro = true,
+                            isBeta = true,
+                            onClick = { showLivePaintingDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "अनुमतियाँ जांचें" else "Check Permissions",
+                            icon = Icons.Default.Security,
+                            iconColor = Color(0xFF4A69BD),
+                            hasPro = false,
+                            onClick = { showCheckPermissionsDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
         }
 
-        // 9. SCREEN TIME GAUGE & INSTANT LOCK CONTROLS
+        // 4. SECTION: USAGE SAFETY (FlashGet Section 3)
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                ScreenTimeGauge(
-                    usedMinutes = usedMinutesToday,
-                    limitMinutes = child.weekdayLimitMinutes,
-                    bonusMinutes = child.bonusMinutesToday,
-                    isLocked = child.isLocked,
-                    isHindi = isHindi
-                )
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = if (isHindi) "उपयोग सुरक्षा" else "Usage Safety",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFF1E1E2E)
+                    )
 
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Row 1: Social App Detection, Call & SMS Safety, Albums Safety
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        FlashGetGridItem(
+                            title = if (isHindi) "सोशल ऐप डिटेक्शन" else "Social App Detection",
+                            icon = Icons.Default.Chat,
+                            iconColor = Color(0xFF25D366),
+                            hasPro = true,
+                            onClick = { showSocialAppDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "कॉल व SMS सुरक्षा" else "Call & SMS Safety",
+                            icon = Icons.Default.Call,
+                            iconColor = Color(0xFF6C5CE7),
+                            hasPro = true,
+                            onClick = { showCallHistoryDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "एल्बम व गैलरी सुरक्षा" else "Albums Safety",
+                            icon = Icons.Default.PhotoLibrary,
+                            iconColor = Color(0xFF6C5CE7),
+                            hasPro = true,
+                            onClick = { showAlbumsSafetyDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Row 2: Browser Safety
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        FlashGetGridItem(
+                            title = if (isHindi) "ब्राउज़र सुरक्षा" else "Browser Safety",
+                            icon = Icons.Default.Public,
+                            iconColor = Color(0xFF0984E3),
+                            hasPro = true,
+                            onClick = { showBrowserSafetyDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+
+        // 5. QUICK ACTIONS: INSTANT LOCK & GPS RADAR
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Instant Lock / Unlock button
+                    // Instant Lock
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable {
-                                if (child.isLocked) {
-                                    onInstantLockToggle(false, "", 0)
-                                } else {
-                                    showLockDialog = true
-                                }
-                            },
-                        shape = RoundedCornerShape(16.dp),
+                            .clickable { showLockDialog = true },
+                        shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (child.isLocked) Terracotta100 else NaturalSurfaceVariant
+                            containerColor = if (child.isLocked) Color(0xFFFF4757).copy(alpha = 0.1f) else Color(0xFFF3F0FF)
                         )
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp, horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = if (child.isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
+                                if (child.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
                                 contentDescription = null,
-                                tint = if (child.isLocked) Terracotta700 else NaturalGreen700,
-                                modifier = Modifier.size(18.dp)
+                                tint = if (child.isLocked) Color(0xFFFF4757) else Color(0xFF6C5CE7),
+                                modifier = Modifier.size(22.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (child.isLocked) {
-                                    if (isHindi) "डिवाइस अनलॉक" else "Unlock Device"
-                                } else {
-                                    if (isHindi) "तुरंत फ्रीज करें" else "Freeze Device"
-                                },
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = if (child.isLocked) Terracotta700 else NaturalTextPrimary
-                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (child.isLocked) (if (isHindi) "फोन लॉक है" else "Phone Locked") else (if (isHindi) "तुरंत लॉक" else "Instant Lock"),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = if (child.isLocked) Color(0xFFFF4757) else Color(0xFF1E1E2E)
+                                )
+                                Text(
+                                    text = if (isHindi) "रिमोट कंट्रोल" else "Remote",
+                                    fontSize = 10.sp,
+                                    color = Color.Gray
+                                )
+                            }
                         }
                     }
 
-                    // +15m Bonus time button
+                    // GPS Radar
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { showBonusDialog = true },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = NaturalGreen100)
+                            .clickable { showLocationDialog = true },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp, horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Timer,
-                                contentDescription = null,
-                                tint = NaturalGreen700,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isHindi) "+ समय बढ़ाएं" else "+ Bonus Time",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = NaturalGreen900
-                            )
+                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF1976D2), modifier = Modifier.size(22.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "लोकेशन रडार" else "Live GPS Radar",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF1E1E2E)
+                                )
+                                Text(
+                                    text = if (isHindi) "${geofenceZones.size} सुरक्षित ज़ोन" else "${geofenceZones.size} Safe Zones",
+                                    fontSize = 10.sp,
+                                    color = Color.Gray
+                                )
+                            }
                         }
                     }
+                }
+            }
+        }
+
+        // 6. HOW TO OPEN HIDDEN CHILD'S APP BANNER
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .clickable { showHiddenGuideDialog = true },
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("💡", fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = if (isHindi) "छिपे हुए चाइल्ड ऐप को कैसे खोलें?" else "How to open the hidden child's app?",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF1E1E2E)
+                        )
+                    }
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF6C7086))
                 }
             }
         }
     }
 }
 
-// Sub-component for Live Monitoring 3-item buttons
+// =========================================================================
+// FLASHGET GRID ITEM COMPONENT (With PRO / Beta PRO Badges)
+// =========================================================================
 @Composable
-private fun LiveMonitoringButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    iconTint: Color,
-    bgTint: Color,
-    onClick: () -> Unit
+fun FlashGetGridItem(
+    title: String,
+    icon: ImageVector,
+    iconColor: Color,
+    hasPro: Boolean = false,
+    isBeta: Boolean = false,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .padding(8.dp)
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier
-                .size(54.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(bgTint),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = iconTint,
-                modifier = Modifier.size(28.dp)
-            )
-
-            // "Trial" Badge at top corner
-            Surface(
-                shape = RoundedCornerShape(4.dp),
-                color = Color(0xFF3B82F6),
+        Box(contentAlignment = Alignment.Center) {
+            // Icon container
+            Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(2.dp)
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(iconColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Trial",
-                    color = Color.White,
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = iconColor,
+                    modifier = Modifier.size(28.dp)
                 )
+            }
+
+            // PRO or Beta PRO Badge
+            if (hasPro) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 6.dp, y = 4.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            if (isBeta) Brush.horizontalGradient(listOf(Color(0xFF6C5CE7), Color(0xFFFFB300)))
+                            else Brush.horizontalGradient(listOf(Color(0xFFFFB300), Color(0xFFF39C12)))
+                        )
+                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                ) {
+                    Text(
+                        text = if (isBeta) "Beta PRO" else "PRO",
+                        color = Color.White,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = label,
+            text = title,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
-            color = NaturalTextPrimary
+            color = Color(0xFF2D3436),
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 14.sp
         )
     }
 }

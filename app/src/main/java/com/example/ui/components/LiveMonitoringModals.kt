@@ -1,15 +1,19 @@
 package com.example.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,43 +30,75 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddLocation
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ScreenShare
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.VolumeMute
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -81,6 +117,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -339,22 +376,207 @@ fun RemoteCameraDialog(
     }
 }
 
-// 2. SCREEN MIRRORING LIVE STREAM DIALOG
+// 2. SCREEN MIRRORING & FULL REMOTE CONTROL / APP OPERATOR DIALOG
 @Composable
 fun ScreenMirroringDialog(
     child: ChildProfile,
+    apps: List<AppUsageRule> = emptyList(),
     isHindi: Boolean,
     onInstantLock: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var isPaused by remember { mutableStateOf(false) }
+    var isRemoteControlActive by remember { mutableStateOf(true) }
     var fps by remember { mutableIntStateOf(30) }
+    var activeApp by remember { mutableStateOf("HOME") } // HOME, SETTINGS, WHATSAPP, YOUTUBE, BROWSER, PLAYSTORE, CAMERA, GALLERY, PHONE
+    var touchPointer by remember { mutableStateOf<Offset?>(null) }
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    var isRecordingScreen by remember { mutableStateOf(false) }
+    var snapshotTaken by remember { mutableStateOf(false) }
+    var showAppDrawerDialog by remember { mutableStateOf(false) }
+    var showRemoteTextInputDialog by remember { mutableStateOf(false) }
+    var customRemoteText by remember { mutableStateOf("") }
+    var isScreenPoweredOff by remember { mutableStateOf(false) }
+
+    // Remote Phone Settings States (Controlled directly by Parent)
+    var remoteWifiOn by remember { mutableStateOf(true) }
+    var remoteBluetoothOn by remember { mutableStateOf(false) }
+    var remoteGpsOn by remember { mutableStateOf(true) }
+    var remoteBrightness by remember { mutableFloatStateOf(0.75f) }
+    var remoteVolume by remember { mutableFloatStateOf(0.60f) }
+    var remoteRingtoneVol by remember { mutableFloatStateOf(0.80f) }
+    var remoteDarkMode by remember { mutableStateOf(true) }
+    var remoteEyeComfort by remember { mutableStateOf(true) }
+    var remoteScreenTimeout by remember { mutableStateOf("1 Min") }
+    var remoteCameraPermission by remember { mutableStateOf(true) }
+    var remoteMicPermission by remember { mutableStateOf(true) }
+    var remoteSettingsLocked by remember { mutableStateOf(true) }
+    var remoteBatterySaver by remember { mutableStateOf(false) }
+
+    // App specific interactive states
+    // WhatsApp
+    var whatsAppChatUser by remember { mutableStateOf("Mom (Family)") }
+    var whatsAppTypedText by remember { mutableStateOf("") }
+    var whatsAppMessages by remember {
+        mutableStateOf(
+            listOf(
+                "Mom: Aarav, complete your science homework before 6 PM!" to false,
+                "Aarav: Yes Mom, working on it now 👍" to true,
+                "Mom: Good boy! Don't play games for long." to false
+            )
+        )
+    }
+
+    // YouTube
+    var isYouTubePlaying by remember { mutableStateOf(true) }
+    var youTubeVideoTitle by remember { mutableStateOf("Solar System Explained for Kids - Science 4K") }
+    var youTubeSafeSearchOn by remember { mutableStateOf(true) }
+
+    // Browser
+    var browserUrl by remember { mutableStateOf("https://kids.nationalgeographic.com") }
+    var browserSearchQuery by remember { mutableStateOf("Science Experiments for Class 6") }
+
+    // Play Store
+    var playStoreBlockDownloads by remember { mutableStateOf(true) }
+
+    // Auto-clear toasts & FPS simulation
+    LaunchedEffect(toastMessage) {
+        if (toastMessage != null) {
+            delay(2800)
+            toastMessage = null
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
             delay(1500)
             fps = Random.nextInt(28, 32)
         }
+    }
+
+    // Modal: Quick App Drawer (Directly launch any app)
+    if (showAppDrawerDialog) {
+        AlertDialog(
+            onDismissRequest = { showAppDrawerDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Apps, contentDescription = null, tint = Color(0xFF6C5CE7))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "बच्चों के फ़ोन पर कोई भी ऐप खोलें" else "Launch App on Child Phone",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp
+                    )
+                }
+            },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text(
+                        text = if (isHindi) "जिस ऐप को चुनेंगे वह बच्चे के मोबाइल में तुरंत खुल जाएगा और आप उसे पूरा चला सकेंगे।"
+                        else "Select any app to immediately launch and operate it on ${child.name}'s device.",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    val appList = listOf(
+                        Triple("Settings (फ़ोन सेटिंग्स)", Icons.Default.Settings, "SETTINGS"),
+                        Triple("WhatsApp (व्हाट्सएप)", Icons.Default.Chat, "WHATSAPP"),
+                        Triple("YouTube Kids (यूट्यूब)", Icons.Default.PlayArrow, "YOUTUBE"),
+                        Triple("Chrome Browser (ब्राउज़र)", Icons.Default.Language, "BROWSER"),
+                        Triple("Google Play Store (प्ले स्टोर)", Icons.Default.ShoppingCart, "PLAYSTORE"),
+                        Triple("Camera (कैमरा)", Icons.Default.PhotoCamera, "CAMERA"),
+                        Triple("Photos / Gallery (गैलरी)", Icons.Default.Photo, "GALLERY"),
+                        Triple("Phone & Calls (फोन)", Icons.Default.Phone, "PHONE")
+                    )
+
+                    appList.forEach { (label, icon, key) ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    activeApp = key
+                                    isScreenPoweredOff = false
+                                    showAppDrawerDialog = false
+                                    toastMessage = if (isHindi) "🚀 '${label}' बच्चे के फ़ोन पर खोला गया" else "🚀 Launched $label remotely"
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (activeApp == key) Color(0xFF6C5CE7).copy(alpha = 0.12f) else Color(0xFFF4F6FB)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(icon, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(label, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color(0xFF2D3436))
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAppDrawerDialog = false }) {
+                    Text(if (isHindi) "बंद करें" else "Close", color = Color(0xFF6C5CE7))
+                }
+            }
+        )
+    }
+
+    // Modal: Send Text / Keystrokes Remotely
+    if (showRemoteTextInputDialog) {
+        AlertDialog(
+            onDismissRequest = { showRemoteTextInputDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Keyboard, contentDescription = null, tint = Color(0xFF6C5CE7))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (isHindi) "रिमोट टेक्स्ट टाइप करें" else "Send Remote Keystrokes", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        text = if (isHindi) "यह टेक्स्ट बच्चे के फोन में इनपुट फ़ील्ड में टाइप हो जाएगा।" else "This text will be directly typed into the active input on child's device.",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = customRemoteText,
+                        onValueChange = { customRemoteText = it },
+                        placeholder = { Text(if (isHindi) "संदेश या टेक्स्ट लिखें..." else "Type remote text here...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (customRemoteText.isNotBlank()) {
+                            if (activeApp == "WHATSAPP") {
+                                whatsAppMessages = whatsAppMessages + ("Parent (Remote): $customRemoteText" to true)
+                            }
+                            toastMessage = if (isHindi) "⌨️ भेजा गया: '$customRemoteText'" else "⌨️ Injected text: '$customRemoteText'"
+                            customRemoteText = ""
+                        }
+                        showRemoteTextInputDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7))
+                ) {
+                    Text(if (isHindi) "भेजें" else "Send")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRemoteTextInputDialog = false }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
     }
 
     Dialog(
@@ -364,15 +586,15 @@ fun ScreenMirroringDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF0F1210))
+                .background(Color(0xFF0C0F12))
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 40.dp, bottom = 24.dp),
+                    .padding(top = 34.dp, bottom = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top Header
+                // TOP HEADER BAR: Live Connection Status & Mode Switch
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -381,148 +603,995 @@ fun ScreenMirroringDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.ScreenShare, contentDescription = null, tint = Color(0xFF69F0AE))
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(if (isPaused) Color(0xFFFFD54F) else Color(0xFF00E676))
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (isHindi) "${child.name} का मोबाइल (लाइव कंट्रोल)" else "${child.name}'s Device (Remote Control)",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = if (isRemoteControlActive) Color(0xFF6C5CE7) else Color(0xFF4A4E69)
+                                ) {
+                                    Text(
+                                        text = if (isRemoteControlActive) (if (isHindi) "कंट्रोल ऑन" else "TOUCH ACTIVE") else (if (isHindi) "केवल व्यू" else "VIEW ONLY"),
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
                             Text(
-                                text = if (isHindi) "${child.name} की लाइव स्क्रीन" else "${child.name}'s Live Screen",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                            Text(
-                                text = "${child.deviceModel} • $fps FPS • 42ms ping",
-                                color = Color.LightGray,
+                                text = "${child.deviceModel} • $fps FPS • 38ms • 🔋 ${child.batteryPercent}%",
+                                color = Color(0xFFA4B0BE),
                                 fontSize = 11.sp
                             )
                         }
                     }
 
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.1f))
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Snapshot
+                        IconButton(
+                            onClick = {
+                                snapshotTaken = true
+                                toastMessage = if (isHindi) "📸 स्क्रीनशॉट गैलरी में सेव हो गया!" else "📸 Screen Snapshot Saved!"
+                            },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.12f))
+                        ) {
+                            Icon(Icons.Default.PhotoCamera, contentDescription = "Snap", tint = Color.White, modifier = Modifier.size(18.dp))
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Close
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.12f))
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                // TOAST BANNER FOR REMOTE ACTIONS
+                AnimatedVisibility(
+                    visible = toastMessage != null,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF1E272E),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C5CE7)),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = toastMessage ?: "",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
 
-                // Simulated Child Device Frame
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // SIMULATED INTERACTIVE CHILD PHONE SCREEN FRAME
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 24.dp)
-                        .aspectRatio(9f / 16f)
+                        .padding(horizontal = 16.dp)
+                        .aspectRatio(9f / 16.5f)
                         .clip(RoundedCornerShape(32.dp))
-                        .border(4.dp, Color(0xFF2C3E30), RoundedCornerShape(32.dp))
-                        .background(Color(0xFF1B231D)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // Simulated Screen Content (e.g. YouTube Kids / Learning App)
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Phone Status bar
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("10:45 AM", color = Color.White, fontSize = 10.sp)
-                            Text("📶 🔋 ${child.batteryPercent}%", color = Color.White, fontSize = 10.sp)
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // App in use representation
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(160.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE53935))
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(Icons.Default.ScreenShare, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("YouTube Kids Playing", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("Educational Science Video", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+                        .border(4.dp, Color(0xFF2C3E50), RoundedCornerShape(32.dp))
+                        .background(Color(0xFF13181E))
+                        .pointerInput(Unit) {
+                            detectTapGestures { offset ->
+                                if (isRemoteControlActive) {
+                                    touchPointer = offset
+                                    toastMessage = if (isHindi) "👆 टच भेजा गया (X:${offset.x.toInt()}, Y:${offset.y.toInt()})"
+                                    else "👆 Injected touch at (${offset.x.toInt()}, ${offset.y.toInt()})"
+                                }
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Sub content
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (isScreenPoweredOff) {
+                        // Screen Off state
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(70.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color.White.copy(alpha = 0.08f))
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(70.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color.White.copy(alpha = 0.08f))
-                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.PowerSettingsNew, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = if (isHindi) "बच्चे की स्क्रीन बंद है (स्लीप मोड)" else "Child Screen is Powered Off (Sleep)",
+                                    color = Color.LightGray,
+                                    fontSize = 12.sp
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Button(
+                                    onClick = {
+                                        isScreenPoweredOff = false
+                                        toastMessage = if (isHindi) "💡 बच्चे की स्क्रीन को रिमोटली चालू किया गया" else "💡 Child Screen Woken Up Remotely"
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text(if (isHindi) "स्क्रीन चालू करें" else "Wake Up Screen", fontSize = 12.sp)
+                                }
+                            }
                         }
+                    } else {
+                        // Live Interactive Screen Content
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            // CHILD PHONE STATUS BAR
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFF0A0D10))
+                                    .padding(horizontal = 14.dp, vertical = 5.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("10:45 AM", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (remoteWifiOn) {
+                                        Icon(Icons.Default.Wifi, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
+                                    if (remoteBluetoothOn) {
+                                        Icon(Icons.Default.Bluetooth, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
+                                    Text("4G 🔋 ${child.batteryPercent}%", color = Color.White, fontSize = 10.sp)
+                                }
+                            }
 
-                        Spacer(modifier = Modifier.weight(1f))
+                            // ACTIVE SCREEN BODY (Based on activeApp)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                when (activeApp) {
+                                    // 1. HOME LAUNCHER SCREEN
+                                    "HOME" -> {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(
+                                                    Brush.verticalGradient(listOf(Color(0xFF1B2838), Color(0xFF0D1B2A)))
+                                                )
+                                                .padding(14.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            // Clock & Weather Widget
+                                            Text("10:45", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Light)
+                                            Text("Thursday, 20 August • 28°C", color = Color(0xFFA4B0BE), fontSize = 11.sp)
 
-                        Text(
-                            text = if (isHindi) "स्क्रीन मिररिंग सुरक्षित और एन्क्रिप्टेड है" else "Live Screen Streaming (Encrypted)",
-                            color = Color.LightGray,
-                            fontSize = 10.sp
+                                            Spacer(modifier = Modifier.height(14.dp))
+
+                                            // Search Bar
+                                            Surface(
+                                                modifier = Modifier.fillMaxWidth().height(36.dp),
+                                                shape = RoundedCornerShape(18.dp),
+                                                color = Color.White.copy(alpha = 0.15f)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text("G", color = Color(0xFF4285F4), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(if (isHindi) "Google सेफ सर्च..." else "Google SafeSearch...", color = Color.LightGray, fontSize = 11.sp)
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(16.dp))
+
+                                            // App Grid (Clickable by Parent!)
+                                            Text(
+                                                text = if (isHindi) "ऐप्स (टैप करके बच्चे के फोन में खोलें):" else "Apps (Tap to launch on child's phone):",
+                                                color = Color(0xFFA4B0BE),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                modifier = Modifier.align(Alignment.Start)
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            val homeApps = listOf(
+                                                Triple("Settings", Icons.Default.Settings, "SETTINGS"),
+                                                Triple("WhatsApp", Icons.Default.Chat, "WHATSAPP"),
+                                                Triple("YouTube", Icons.Default.PlayArrow, "YOUTUBE"),
+                                                Triple("Chrome", Icons.Default.Language, "BROWSER"),
+                                                Triple("Play Store", Icons.Default.ShoppingCart, "PLAYSTORE"),
+                                                Triple("Camera", Icons.Default.PhotoCamera, "CAMERA"),
+                                                Triple("Gallery", Icons.Default.Photo, "GALLERY"),
+                                                Triple("Phone", Icons.Default.Phone, "PHONE")
+                                            )
+
+                                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                                for (row in homeApps.chunked(4)) {
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        for ((appName, appIcon, appKey) in row) {
+                                                            Column(
+                                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(12.dp))
+                                                                    .clickable {
+                                                                        activeApp = appKey
+                                                                        toastMessage = if (isHindi) "🚀 $appName बच्चे के फोन पर खोला गया" else "🚀 Opened $appName on child phone"
+                                                                    }
+                                                                    .padding(4.dp)
+                                                            ) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .size(42.dp)
+                                                                        .clip(RoundedCornerShape(12.dp))
+                                                                        .background(
+                                                                            when (appKey) {
+                                                                                "SETTINGS" -> Color(0xFF4A5568)
+                                                                                "WHATSAPP" -> Color(0xFF25D366)
+                                                                                "YOUTUBE" -> Color(0xFFFF0000)
+                                                                                "BROWSER" -> Color(0xFF4285F4)
+                                                                                "PLAYSTORE" -> Color(0xFF00C853)
+                                                                                "CAMERA" -> Color(0xFF6C5CE7)
+                                                                                "GALLERY" -> Color(0xFFFF9800)
+                                                                                else -> Color(0xFF00B894)
+                                                                            }
+                                                                        ),
+                                                                    contentAlignment = Alignment.Center
+                                                                ) {
+                                                                    Icon(appIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                                                                }
+                                                                Spacer(modifier = Modifier.height(3.dp))
+                                                                Text(appName, color = Color.White, fontSize = 9.sp, maxLines = 1)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // 2. REMOTE SYSTEM SETTINGS (फुल फ़ोन सेटिंग्स कंट्रोल)
+                                    "SETTINGS" -> {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color(0xFF1E1E24))
+                                                .verticalScroll(rememberScrollState())
+                                                .padding(12.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF6C5CE7))
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(if (isHindi) "डिवाइस सेटिंग्स (रिमोट)" else "Device Settings (Remote)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                                }
+                                                Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFF00B894)) {
+                                                    Text("LIVE SYNC", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            // WiFi Toggle
+                                            Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFF2B2B36), modifier = Modifier.fillMaxWidth()) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(if (remoteWifiOn) Icons.Default.Wifi else Icons.Default.WifiOff, contentDescription = null, tint = if (remoteWifiOn) Color(0xFF00E676) else Color.Gray, modifier = Modifier.size(20.dp))
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Column {
+                                                            Text("Wi-Fi Network", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                            Text(if (remoteWifiOn) "Home_5G_Protected" else "Disconnected", color = Color.LightGray, fontSize = 10.sp)
+                                                        }
+                                                    }
+                                                    Switch(
+                                                        checked = remoteWifiOn,
+                                                        onCheckedChange = {
+                                                            remoteWifiOn = it
+                                                            toastMessage = if (it) "📶 WiFi turned ON remotely" else "📶 WiFi turned OFF remotely"
+                                                        },
+                                                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF6C5CE7))
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                            // Bluetooth & GPS
+                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    color = Color(0xFF2B2B36),
+                                                    modifier = Modifier.weight(1f).clickable {
+                                                        remoteBluetoothOn = !remoteBluetoothOn
+                                                        toastMessage = "Bluetooth: ${if (remoteBluetoothOn) "ON" else "OFF"}"
+                                                    }
+                                                ) {
+                                                    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.Bluetooth, contentDescription = null, tint = if (remoteBluetoothOn) Color(0xFF4285F4) else Color.Gray, modifier = Modifier.size(18.dp))
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text("Bluetooth: ${if (remoteBluetoothOn) "ON" else "OFF"}", color = Color.White, fontSize = 10.sp)
+                                                    }
+                                                }
+
+                                                Surface(
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    color = Color(0xFF2B2B36),
+                                                    modifier = Modifier.weight(1f).clickable {
+                                                        remoteGpsOn = !remoteGpsOn
+                                                        toastMessage = "GPS: ${if (remoteGpsOn) "High Accuracy" else "OFF"}"
+                                                    }
+                                                ) {
+                                                    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = if (remoteGpsOn) Color(0xFF00E676) else Color.Gray, modifier = Modifier.size(18.dp))
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text("GPS: ${if (remoteGpsOn) "ON" else "OFF"}", color = Color.White, fontSize = 10.sp)
+                                                    }
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            // Brightness Slider
+                                            Text(if (isHindi) "स्क्रीन ब्राइटनेस: ${(remoteBrightness * 100).toInt()}%" else "Screen Brightness: ${(remoteBrightness * 100).toInt()}%", color = Color.LightGray, fontSize = 11.sp)
+                                            Slider(
+                                                value = remoteBrightness,
+                                                onValueChange = {
+                                                    remoteBrightness = it
+                                                    toastMessage = "🔆 Brightness adjusted to ${(it * 100).toInt()}%"
+                                                },
+                                                colors = SliderDefaults.colors(thumbColor = Color(0xFF6C5CE7), activeTrackColor = Color(0xFF6C5CE7))
+                                            )
+
+                                            // Volume Slider
+                                            Text(if (isHindi) "मीडिया वॉल्यूम: ${(remoteVolume * 100).toInt()}%" else "Media Volume: ${(remoteVolume * 100).toInt()}%", color = Color.LightGray, fontSize = 11.sp)
+                                            Slider(
+                                                value = remoteVolume,
+                                                onValueChange = {
+                                                    remoteVolume = it
+                                                    toastMessage = "🔊 Volume adjusted to ${(it * 100).toInt()}%"
+                                                },
+                                                colors = SliderDefaults.colors(thumbColor = Color(0xFF00B894), activeTrackColor = Color(0xFF00B894))
+                                            )
+
+                                            Spacer(modifier = Modifier.height(4.dp))
+
+                                            // Permissions & Security Guard
+                                            Text(if (isHindi) "सुरक्षा व अनुमतियां (Security & Lock):" else "Security & App Permissions:", color = Color(0xFFA4B0BE), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            Spacer(modifier = Modifier.height(4.dp))
+
+                                            Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFF2B2B36), modifier = Modifier.fillMaxWidth()) {
+                                                Column(modifier = Modifier.padding(10.dp)) {
+                                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                                        Text("Camera Permission", color = Color.White, fontSize = 11.sp)
+                                                        Switch(checked = remoteCameraPermission, onCheckedChange = { remoteCameraPermission = it; toastMessage = "Camera permission: $it" })
+                                                    }
+                                                    HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+                                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                                        Text("Microphone Permission", color = Color.White, fontSize = 11.sp)
+                                                        Switch(checked = remoteMicPermission, onCheckedChange = { remoteMicPermission = it; toastMessage = "Microphone permission: $it" })
+                                                    }
+                                                    HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+                                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                                        Text("Lock Settings Access", color = Color.White, fontSize = 11.sp)
+                                                        Switch(checked = remoteSettingsLocked, onCheckedChange = { remoteSettingsLocked = it; toastMessage = "Child Settings Lock: $it" })
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // 3. WHATSAPP REMOTE MESSENGER & CONTROLLER
+                                    "WHATSAPP" -> {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color(0xFF111B21))
+                                        ) {
+                                            // WhatsApp Header
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(Color(0xFF202C33))
+                                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.ArrowBack,
+                                                    contentDescription = "Back",
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(20.dp).clickable { activeApp = "HOME" }
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(30.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(0xFF25D366)),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                                }
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(whatsAppChatUser, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                    Text("Online • Remote Monitored", color = Color(0xFF25D366), fontSize = 9.sp)
+                                                }
+                                            }
+
+                                            // Chat Stream
+                                            LazyColumn(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                items(whatsAppMessages) { (msg, isMe) ->
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start
+                                                    ) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            color = if (isMe) Color(0xFF005C4B) else Color(0xFF202C33)
+                                                        ) {
+                                                            Text(
+                                                                text = msg,
+                                                                color = Color.White,
+                                                                fontSize = 11.sp,
+                                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // Parent Remote Input for WhatsApp
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(Color(0xFF202C33))
+                                                    .padding(6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                OutlinedTextField(
+                                                    value = whatsAppTypedText,
+                                                    onValueChange = { whatsAppTypedText = it },
+                                                    placeholder = { Text(if (isHindi) "मैसेज टाइप करें..." else "Type message...", color = Color.Gray, fontSize = 11.sp) },
+                                                    modifier = Modifier.weight(1f).height(44.dp),
+                                                    shape = RoundedCornerShape(20.dp),
+                                                    colors = OutlinedTextFieldDefaults.colors(
+                                                        focusedBorderColor = Color(0xFF25D366),
+                                                        unfocusedBorderColor = Color.Transparent,
+                                                        focusedTextColor = Color.White,
+                                                        unfocusedTextColor = Color.White
+                                                    ),
+                                                    singleLine = true
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                IconButton(
+                                                    onClick = {
+                                                        if (whatsAppTypedText.isNotBlank()) {
+                                                            whatsAppMessages = whatsAppMessages + ("Parent: $whatsAppTypedText" to true)
+                                                            toastMessage = if (isHindi) "💬 मैसेज भेजा गया: $whatsAppTypedText" else "💬 Sent message: $whatsAppTypedText"
+                                                            whatsAppTypedText = ""
+                                                        }
+                                                    },
+                                                    modifier = Modifier
+                                                        .size(36.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(0xFF25D366))
+                                                ) {
+                                                    Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White, modifier = Modifier.size(18.dp))
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // 4. YOUTUBE REMOTE OPERATOR
+                                    "YOUTUBE" -> {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color(0xFF0F0F0F))
+                                        ) {
+                                            // Top Search & SafeSearch bar
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(Color(0xFF212121))
+                                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp).clickable { activeApp = "HOME" })
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    color = Color.White.copy(alpha = 0.12f),
+                                                    modifier = Modifier.weight(1f).height(32.dp)
+                                                ) {
+                                                    Row(modifier = Modifier.padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.Search, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(14.dp))
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text("Science for kids...", color = Color.LightGray, fontSize = 10.sp)
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF00B894)) {
+                                                    Text("SafeMode ON", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                                }
+                                            }
+
+                                            // Video Player Frame
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(140.dp)
+                                                    .background(Color(0xFF1E272E)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Icon(
+                                                        imageVector = if (isYouTubePlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier
+                                                            .size(44.dp)
+                                                            .clip(CircleShape)
+                                                            .background(Color.Red)
+                                                            .clickable {
+                                                                isYouTubePlaying = !isYouTubePlaying
+                                                                toastMessage = if (isYouTubePlaying) "▶️ Video Resumed" else "⏸️ Video Paused Remotely"
+                                                            }
+                                                            .padding(8.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.height(6.dp))
+                                                    Text(youTubeVideoTitle, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 12.dp))
+                                                }
+                                            }
+
+                                            // Video Recommendations (Clickable)
+                                            Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                Text("Recommended Safe Educational Videos:", color = Color.Gray, fontSize = 10.sp)
+                                                val vids = listOf(
+                                                    "Math Tricks: Vedic Speed Math" to "Education • 12m",
+                                                    "National Geographic: Wildlife Wonders" to "Science • 18m",
+                                                    "Learn Coding: Scratch for Beginners" to "Coding • 15m"
+                                                )
+                                                for ((vTitle, vSub) in vids) {
+                                                    Surface(
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        color = Color(0xFF1E1E1E),
+                                                        modifier = Modifier.fillMaxWidth().clickable {
+                                                            youTubeVideoTitle = vTitle
+                                                            isYouTubePlaying = true
+                                                            toastMessage = "▶️ Switched video to: $vTitle"
+                                                        }
+                                                    ) {
+                                                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.Red, modifier = Modifier.size(16.dp))
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            Column {
+                                                                Text(vTitle, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                                                Text(vSub, color = Color.Gray, fontSize = 9.sp)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // 5. CHROME BROWSER OPERATOR
+                                    "BROWSER" -> {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color(0xFF202124))
+                                        ) {
+                                            // Address Bar
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(Color(0xFF292A2D))
+                                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp).clickable { activeApp = "HOME" })
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    color = Color(0xFF3C4043),
+                                                    modifier = Modifier.weight(1f).height(30.dp)
+                                                ) {
+                                                    Row(modifier = Modifier.padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(12.dp))
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text(browserUrl, color = Color.White, fontSize = 10.sp, maxLines = 1)
+                                                    }
+                                                }
+                                            }
+
+                                            // Browser Content
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color.White)
+                                                    .padding(12.dp)
+                                            ) {
+                                                Text("National Geographic Kids", color = Color(0xFF1E272E), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text("Safe browsing verified. All adult, gaming and restricted domains blocked by Parent Guard.", color = Color(0xFF2ED573), fontSize = 10.sp)
+                                                Spacer(modifier = Modifier.height(10.dp))
+                                                Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFF1F2F6), modifier = Modifier.fillMaxWidth().height(100.dp)) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Text("Explore Science, Animals & Space Articles", color = Color(0xFF57606F), fontSize = 11.sp)
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(10.dp))
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    Button(
+                                                        onClick = {
+                                                            browserUrl = "https://khanacademy.org"
+                                                            toastMessage = "🌐 Opened Khan Academy"
+                                                        },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                                                        modifier = Modifier.weight(1f),
+                                                        shape = RoundedCornerShape(8.dp)
+                                                    ) {
+                                                        Text("Khan Academy", fontSize = 10.sp)
+                                                    }
+                                                    Button(
+                                                        onClick = {
+                                                            browserUrl = "https://wikipedia.org"
+                                                            toastMessage = "🌐 Opened Wikipedia"
+                                                        },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D3436)),
+                                                        modifier = Modifier.weight(1f),
+                                                        shape = RoundedCornerShape(8.dp)
+                                                    ) {
+                                                        Text("Wikipedia", fontSize = 10.sp)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // 6. PLAY STORE & APP CONTROL
+                                    "PLAYSTORE" -> {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color(0xFF1E1E24))
+                                                .padding(12.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp).clickable { activeApp = "HOME" })
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(if (isHindi) "Google Play Store (प्रबंधन)" else "Play Store (App Rules)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFF2B2B36), modifier = Modifier.fillMaxWidth()) {
+                                                Row(
+                                                    modifier = Modifier.padding(10.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column {
+                                                        Text("Block New App Installs", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                        Text("Requires parent PIN to install", color = Color.Gray, fontSize = 10.sp)
+                                                    }
+                                                    Switch(
+                                                        checked = playStoreBlockDownloads,
+                                                        onCheckedChange = {
+                                                            playStoreBlockDownloads = it
+                                                            toastMessage = if (it) "🚫 New App Downloads Blocked" else "✅ App Downloads Allowed"
+                                                        }
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            Text("Installed Apps on ${child.name}'s phone:", color = Color.LightGray, fontSize = 11.sp)
+                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                            val childAppsList = listOf(
+                                                "Free Fire" to "Blocked (Games)",
+                                                "Roblox" to "Limited 30m/day",
+                                                "Duolingo" to "Always Allowed",
+                                                "Chrome" to "Filtered & Monitored"
+                                            )
+
+                                            for ((aName, aRule) in childAppsList) {
+                                                Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF2B2B36), modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Column {
+                                                            Text(aName, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                                            Text(aRule, color = Color.LightGray, fontSize = 9.sp)
+                                                        }
+                                                        Button(
+                                                            onClick = {
+                                                                toastMessage = "🛑 Force Stopped $aName on child phone"
+                                                            },
+                                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4757)),
+                                                            shape = RoundedCornerShape(6.dp),
+                                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                                        ) {
+                                                            Text("Force Stop", fontSize = 9.sp)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // 7. CAMERA / GALLERY / PHONE
+                                    else -> {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color(0xFF1E272E)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Icon(Icons.Default.Smartphone, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(48.dp))
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text(activeApp, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(if (isHindi) "लाइव रिमोट कंट्रोल सक्रिय है" else "Live Remote Control Active", color = Color(0xFF00E676), fontSize = 11.sp)
+                                                Spacer(modifier = Modifier.height(14.dp))
+                                                Button(
+                                                    onClick = { activeApp = "HOME" },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                                                    shape = RoundedCornerShape(10.dp)
+                                                ) {
+                                                    Text(if (isHindi) "होम स्क्रीन पर जाएं" else "Back to Home Screen", fontSize = 12.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // ANDROID NAVIGATION BAR (Back ◀, Home ⚪, Recents ⬛)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFF0A0D10))
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Back Button
+                                IconButton(
+                                    onClick = {
+                                        activeApp = "HOME"
+                                        toastMessage = if (isHindi) "◀ रिमोट 'Back' दबाया गया" else "◀ Sent 'Back' key to child device"
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
+                                }
+
+                                // Home Button
+                                IconButton(
+                                    onClick = {
+                                        activeApp = "HOME"
+                                        toastMessage = if (isHindi) "⚪ रिमोट 'Home' दबाया गया" else "⚪ Sent 'Home' key to child device"
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .clip(CircleShape)
+                                            .border(2.dp, Color.White, CircleShape)
+                                    )
+                                }
+
+                                // Recent Apps Button
+                                IconButton(
+                                    onClick = {
+                                        showAppDrawerDialog = true
+                                        toastMessage = if (isHindi) "⬛ रीसेंट ऐप्स खोला गया" else "⬛ Opened Recent App Switcher"
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .border(2.dp, Color.White, RoundedCornerShape(2.dp))
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Touch Indicator Ripple
+                    touchPointer?.let { pos ->
+                        Box(
+                            modifier = Modifier
+                                .offset(x = (pos.x.toInt() - 20).dp, y = (pos.y.toInt() - 20).dp)
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF6C5CE7).copy(alpha = 0.4f))
+                                .border(2.dp, Color.White, CircleShape)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Bottom Action buttons
-                Row(
+                // BOTTOM PARENT CONTROL DOCK (Quick Commands & Remote Actions)
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2129)),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(horizontal = 14.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { isPaused = !isPaused },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Text(if (isPaused) "Resume" else "Pause Sync", color = Color.White)
-                    }
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        // Quick Action Buttons Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // 1. App Drawer
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.clickable { showAppDrawerDialog = true }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF6C5CE7)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Apps, contentDescription = "Apps", tint = Color.White, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(if (isHindi) "ऐप्स खोलें" else "Launch App", color = Color.White, fontSize = 9.sp)
+                            }
 
-                    Button(
-                        onClick = {
-                            onInstantLock()
-                            onDismiss()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Terracotta700),
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(if (isHindi) "स्क्रीन फ्रीज करें" else "Freeze Screen", fontWeight = FontWeight.Bold)
+                            // 2. Remote Settings
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.clickable {
+                                    activeApp = "SETTINGS"
+                                    isScreenPoweredOff = false
+                                    toastMessage = if (isHindi) "⚙️ फ़ोन सेटिंग्स खोली गई" else "⚙️ Opened Child Device Settings"
+                                }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF00B894)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(if (isHindi) "सेटिंग्स" else "Settings", color = Color.White, fontSize = 9.sp)
+                            }
+
+                            // 3. Remote Text Input
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.clickable { showRemoteTextInputDialog = true }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF0984E3)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Keyboard, contentDescription = "Keyboard", tint = Color.White, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(if (isHindi) "टेक्स्ट टाइप" else "Type Text", color = Color.White, fontSize = 9.sp)
+                            }
+
+                            // 4. Remote Screen Off / Power
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.clickable {
+                                    isScreenPoweredOff = !isScreenPoweredOff
+                                    toastMessage = if (isScreenPoweredOff) (if (isHindi) "📴 स्क्रीन बंद की गई" else "📴 Screen Powered Off")
+                                    else (if (isHindi) "💡 स्क्रीन चालू की गई" else "💡 Screen Turned On")
+                                }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isScreenPoweredOff) Color(0xFFE17055) else Color(0xFF636E72)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.PowerSettingsNew, contentDescription = "Power", tint = Color.White, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(if (isScreenPoweredOff) (if (isHindi) "स्क्रीन चालू" else "Screen On") else (if (isHindi) "स्क्रीन बंद" else "Screen Off"), color = Color.White, fontSize = 9.sp)
+                            }
+
+                            // 5. Freeze / Instant Lock
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.clickable {
+                                    onInstantLock()
+                                    toastMessage = if (isHindi) "🔒 बच्चे की स्क्रीन तुरंत फ्रीज और लॉक की गई" else "🔒 Child Screen Frozen & Locked"
+                                    onDismiss()
+                                }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFFF4757)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Lock, contentDescription = "Lock", tint = Color.White, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(if (isHindi) "फ्रीज स्क्रीन" else "Freeze Lock", color = Color.White, fontSize = 9.sp)
+                            }
+                        }
                     }
                 }
             }

@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,13 +25,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -38,32 +38,29 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -73,20 +70,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.ui.theme.EarthAmber100
-import com.example.ui.theme.EarthAmber600
-import com.example.ui.theme.NaturalBg
-import com.example.ui.theme.NaturalBorder
-import com.example.ui.theme.NaturalGreen100
-import com.example.ui.theme.NaturalGreen700
-import com.example.ui.theme.NaturalGreen900
-import com.example.ui.theme.NaturalSurface
-import com.example.ui.theme.NaturalSurfaceVariant
-import com.example.ui.theme.NaturalTextPrimary
-import com.example.ui.theme.NaturalTextSecondary
-import com.example.ui.theme.NaturalTextTertiary
-import com.example.ui.theme.Terracotta100
-import com.example.ui.theme.Terracotta700
+import com.example.R
 
 @Composable
 fun AuthScreen(
@@ -98,13 +82,15 @@ fun AuthScreen(
     modifier: Modifier = Modifier
 ) {
     var isSignUpMode by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("Musahid Raza") }
-    var email by remember { mutableStateOf("musahidraza78600@gmail.com") }
+    var name by remember { mutableStateOf("Parent User") }
+    var email by remember { mutableStateOf("thakfree@gmail.com") }
     var password by remember { mutableStateOf("123456") }
     var phone by remember { mutableStateOf("+91 98765 43210") }
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var showSupportDialog by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
 
@@ -112,31 +98,29 @@ fun AuthScreen(
         Dialog(onDismissRequest = { showForgotPasswordDialog = false }) {
             Card(
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = NaturalSurface),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Email, contentDescription = null, tint = NaturalGreen700, modifier = Modifier.size(40.dp))
+                    Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(40.dp))
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = if (isHindi) "पासवर्ड रीसेट लिंक" else "Reset Password",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = NaturalTextPrimary
+                        color = Color(0xFF1E1E2E)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = if (isHindi) "पासवर्ड रीसेट लिंक $email पर भेज दिया गया है।" else "Password reset instructions sent to $email.",
                         fontSize = 13.sp,
-                        color = NaturalTextSecondary,
+                        color = Color(0xFF6C7086),
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { showForgotPasswordDialog = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = NaturalGreen700),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -147,365 +131,321 @@ fun AuthScreen(
         }
     }
 
-    Box(
+    if (showSupportDialog) {
+        Dialog(onDismissRequest = { showSupportDialog = false }) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Headphones, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(40.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = if (isHindi) "24/7 कस्टमर सपोर्ट" else "Customer Support",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF1E1E2E)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (isHindi) "सहायता के लिए हमें support@parentguard.app पर लिखें या लाइव चैट करें।" else "For immediate help, email support@parentguard.app or reach out via live chat.",
+                        fontSize = 13.sp,
+                        color = Color(0xFF6C7086),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { showSupportDialog = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (isHindi) "बंद करें" else "Close", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .background(NaturalBg)
+            .background(Color.White)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        // TOP BAR: Support icon and More options
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            IconButton(onClick = { showSupportDialog = true }) {
+                Icon(Icons.Default.Headphones, contentDescription = "Support", tint = Color(0xFF2D3436))
+            }
+            Box {
+                IconButton(onClick = { showMoreMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color(0xFF2D3436))
+                }
+                DropdownMenu(expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Terms of Service") },
+                        onClick = { showMoreMenu = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Privacy Policy") },
+                        onClick = { showMoreMenu = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Skip & Continue as Guest") },
+                        onClick = {
+                            showMoreMenu = false
+                            onGuestLogin()
+                        }
+                    )
+                }
+            }
+        }
 
-            // Logo & Branding Header
+        // App Logo & Brand Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 16.dp)
+        ) {
             Box(
                 modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(NaturalGreen100),
-                contentAlignment = Alignment.Center
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(2.dp, Color(0xFF6C5CE7), RoundedCornerShape(16.dp))
             ) {
-                Icon(
-                    imageVector = Icons.Default.Shield,
-                    contentDescription = "ParentGuard Logo",
-                    tint = NaturalGreen700,
-                    modifier = Modifier.size(42.dp)
+                Image(
+                    painter = painterResource(id = R.drawable.user_custom_logo_1787213664319),
+                    contentDescription = "App Logo",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = if (isHindi) "ParentGuard पैरेंटगार्ड" else "ParentGuard",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = NaturalGreen900
-            )
-
-            Text(
-                text = if (isHindi) "सुरक्षित माता-पिता व बाल संरक्षण प्रणाली" else "Smart Parental Control & Child Safety",
-                fontSize = 13.sp,
-                color = NaturalTextSecondary,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Main Auth Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(3.dp, RoundedCornerShape(24.dp))
-                    .border(1.dp, NaturalBorder, RoundedCornerShape(24.dp)),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = NaturalSurface)
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    // Sign In / Sign Up Tab Switcher
-                    TabRow(
-                        selectedTabIndex = if (isSignUpMode) 1 else 0,
-                        containerColor = NaturalSurfaceVariant,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp)),
-                        indicator = { tabPositions ->
-                            TabRowDefaults.SecondaryIndicator(
-                                Modifier.tabIndicatorOffset(tabPositions[if (isSignUpMode) 1 else 0]),
-                                color = NaturalGreen700,
-                                height = 3.dp
-                            )
-                        }
-                    ) {
-                        Tab(
-                            selected = !isSignUpMode,
-                            onClick = {
-                                isSignUpMode = false
-                                errorMessage = null
-                            },
-                            text = {
-                                Text(
-                                    text = if (isHindi) "लॉगिन करें" else "Sign In",
-                                    fontWeight = if (!isSignUpMode) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (!isSignUpMode) NaturalGreen700 else NaturalTextSecondary,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        )
-                        Tab(
-                            selected = isSignUpMode,
-                            onClick = {
-                                isSignUpMode = true
-                                errorMessage = null
-                            },
-                            text = {
-                                Text(
-                                    text = if (isHindi) "नया खाता बनाएं" else "Sign Up",
-                                    fontWeight = if (isSignUpMode) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSignUpMode) NaturalGreen700 else NaturalTextSecondary,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    // Error Banner (if any)
-                    AnimatedVisibility(visible = errorMessage != null) {
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = Terracotta100,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp)
-                        ) {
-                            Text(
-                                text = errorMessage ?: "",
-                                color = Terracotta700,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                            )
-                        }
-                    }
-
-                    // Sign Up Name Field
-                    if (isSignUpMode) {
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            label = { Text(if (isHindi) "माता-पिता का नाम" else "Parent's Full Name") },
-                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = NaturalGreen700) },
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = NaturalSurface,
-                                unfocusedContainerColor = NaturalSurfaceVariant,
-                                focusedBorderColor = NaturalGreen700,
-                                unfocusedBorderColor = NaturalBorder
-                            ),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("auth_name_field")
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    // Email Field
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text(if (isHindi) "ईमेल आईडी (Email ID)" else "Email Address") },
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = NaturalGreen700) },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = NaturalSurface,
-                            unfocusedContainerColor = NaturalSurfaceVariant,
-                            focusedBorderColor = NaturalGreen700,
-                            unfocusedBorderColor = NaturalBorder
-                        ),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("auth_email_field")
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Sign Up Phone Field
-                    if (isSignUpMode) {
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = { phone = it },
-                            label = { Text(if (isHindi) "मोबाइल नंबर" else "Phone Number") },
-                            leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = NaturalGreen700) },
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = NaturalSurface,
-                                unfocusedContainerColor = NaturalSurfaceVariant,
-                                focusedBorderColor = NaturalGreen700,
-                                unfocusedBorderColor = NaturalBorder
-                            ),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("auth_phone_field")
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    // Password Field
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text(if (isHindi) "पासवर्ड" else "Password") },
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = NaturalGreen700) },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = "Toggle password visibility",
-                                    tint = NaturalTextSecondary
-                                )
-                            }
-                        },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = NaturalSurface,
-                            unfocusedContainerColor = NaturalSurfaceVariant,
-                            focusedBorderColor = NaturalGreen700,
-                            unfocusedBorderColor = NaturalBorder
-                        ),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("auth_password_field")
-                    )
-
-                    // Forgot password link (for Login)
-                    if (!isSignUpMode) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(onClick = { showForgotPasswordDialog = true }) {
-                                Text(
-                                    text = if (isHindi) "पासवर्ड भूल गए?" else "Forgot Password?",
-                                    fontSize = 12.sp,
-                                    color = NaturalGreen700,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Primary Submit Button
-                    Button(
-                        onClick = {
-                            focusManager.clearFocus()
-                            if (isSignUpMode) {
-                                onSignUp(name, email, password, phone) { success, msg ->
-                                    if (!success) errorMessage = msg
-                                }
-                            } else {
-                                onLogin(email, password) { success, msg ->
-                                    if (!success) errorMessage = msg
-                                }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = NaturalGreen700),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .testTag("auth_submit_button")
-                    ) {
-                        Text(
-                            text = if (isSignUpMode) {
-                                if (isHindi) "खाता बनाएं व जारी रखें" else "Create Account & Continue"
-                            } else {
-                                if (isHindi) "सुरक्षित लॉगिन करें" else "Secure Sign In"
-                            },
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Divider(modifier = Modifier.weight(1f), color = NaturalBorder)
-                        Text(
-                            text = if (isHindi) " या " else " OR ",
-                            fontSize = 12.sp,
-                            color = NaturalTextTertiary,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                        Divider(modifier = Modifier.weight(1f), color = NaturalBorder)
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Google Login Button
-                    OutlinedButton(
-                        onClick = {
-                            onGoogleLogin(email, if (name.isNotBlank()) name else "Musahid Raza")
-                        },
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Text(text = "🌐 ", fontSize = 16.sp)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isHindi) "Google से तुरंत जारी रखें" else "Continue with Google",
-                            color = NaturalTextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                    }
-                }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column {
+                Text(
+                    text = "ParentGuard AI",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF1E1E2E)
+                )
+                Text(
+                    text = if (isHindi) "सुरक्षित पैरेंटल कंट्रोल शील्ड" else "Intelligent Child Protection Hub",
+                    fontSize = 12.sp,
+                    color = Color(0xFF6C5CE7),
+                    fontWeight = FontWeight.SemiBold
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Demo Shortcut
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = EarthAmber100.copy(alpha = 0.5f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onGuestLogin() }
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Default.Security, contentDescription = null, tint = EarthAmber600, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = if (isHindi) "डेमो पैरेंट के रूप में देखें" else "Trial Demo Parent Account",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = NaturalTextPrimary
-                            )
-                            Text(
-                                text = "musahidraza78600@gmail.com (Default Master PIN: 1234)",
-                                fontSize = 10.sp,
-                                color = NaturalTextSecondary
-                            )
-                        }
-                    }
-
-                    Icon(Icons.Default.ArrowForward, contentDescription = null, tint = EarthAmber600, modifier = Modifier.size(18.dp))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
         }
+
+        // Large Header: "You need to sign in" (Matching Screenshot 3)
+        Text(
+            text = if (isSignUpMode) (if (isHindi) "नया खाता बनाएं" else "Create Account")
+            else (if (isHindi) "आपको साइन इन करना होगा" else "You need to sign in"),
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1E1E2E)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Form Fields
+        if (isSignUpMode) {
+            // Full Name (Sign Up only)
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(if (isHindi) "पूरा नाम" else "Full Name") },
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF6C5CE7)) },
+                modifier = Modifier.fillMaxWidth().testTag("auth_name_field"),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF6C5CE7),
+                    unfocusedBorderColor = Color(0xFFE4E7F5)
+                ),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+
+        // Email Field
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it; errorMessage = null },
+            label = { Text(if (isHindi) "ईमेल पता" else "Email") },
+            placeholder = { Text("example@gmail.com") },
+            modifier = Modifier.fillMaxWidth().testTag("auth_email_field"),
+            shape = RoundedCornerShape(16.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF6C5CE7),
+                unfocusedBorderColor = Color(0xFFE4E7F5)
+            ),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Password Field
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it; errorMessage = null },
+            label = { Text(if (isHindi) "पासवर्ड" else "Please enter password") },
+            placeholder = { Text("Please enter password") },
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = "Toggle Password",
+                        tint = Color(0xFF6C7086)
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth().testTag("auth_password_field"),
+            shape = RoundedCornerShape(16.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = {
+                focusManager.clearFocus()
+                if (isSignUpMode) {
+                    onSignUp(name, email, password, phone) { ok, err -> if (!ok) errorMessage = err }
+                } else {
+                    onLogin(email, password) { ok, err -> if (!ok) errorMessage = err }
+                }
+            }),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF6C5CE7),
+                unfocusedBorderColor = Color(0xFFE4E7F5)
+            ),
+            singleLine = true
+        )
+
+        if (!isSignUpMode) {
+            // Forgot password? Link on the right
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Text(
+                    text = if (isHindi) "पासवर्ड भूल गए?" else "Forgot password?",
+                    color = Color(0xFF6C7086),
+                    fontSize = 13.sp,
+                    modifier = Modifier.clickable { showForgotPasswordDialog = true }
+                )
+            }
+        }
+
+        // Error message if any
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = errorMessage ?: "",
+                color = Color(0xFFFF4757),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        // Sign In with Google Button (Bordered card button)
+        OutlinedButton(
+            onClick = { onGoogleLogin(email, "Google Parent User") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .testTag("auth_google_button"),
+            shape = RoundedCornerShape(26.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE4E7F5)),
+            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Colorful Google 'G' Symbol
+                Text(
+                    text = "G",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF4285F4)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (isHindi) "Google से साइन इन करें" else "Sign in with Google",
+                    color = Color(0xFF2D3436),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Vibrant Purple Sign In / Sign Up Button (Matching Screenshot 3)
+        Button(
+            onClick = {
+                focusManager.clearFocus()
+                if (isSignUpMode) {
+                    onSignUp(name, email, password, phone) { ok, err -> if (!ok) errorMessage = err }
+                } else {
+                    onLogin(email, password) { ok, err -> if (!ok) errorMessage = err }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .testTag("auth_submit_button"),
+            shape = RoundedCornerShape(26.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7))
+        ) {
+            Text(
+                text = if (isSignUpMode) (if (isHindi) "साइन अप करें" else "Sign up")
+                else (if (isHindi) "साइन इन करें" else "Sign in"),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        // Footer: "Do not have an account? Sign up" / "Already have an account? Sign in"
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (isSignUpMode) {
+                    if (isHindi) "पहले से खाता है? " else "Already have an account? "
+                } else {
+                    if (isHindi) "खाता नहीं है? " else "Do not have an account? "
+                },
+                color = Color(0xFF6C7086),
+                fontSize = 14.sp
+            )
+            Text(
+                text = if (isSignUpMode) {
+                    if (isHindi) "साइन इन करें" else "Sign in"
+                } else {
+                    if (isHindi) "साइन अप करें" else "Sign up"
+                },
+                color = Color(0xFF6C5CE7),
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                modifier = Modifier.clickable {
+                    isSignUpMode = !isSignUpMode
+                    errorMessage = null
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }

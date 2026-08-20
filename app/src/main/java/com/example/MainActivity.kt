@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,16 +39,23 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,6 +77,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -90,18 +100,6 @@ import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.RewardsScreen
 import com.example.ui.screens.ScheduleRulesScreen
 import com.example.ui.theme.MyApplicationTheme
-import com.example.ui.theme.NaturalBg
-import com.example.ui.theme.NaturalBorder
-import com.example.ui.theme.NaturalCardBg
-import com.example.ui.theme.NaturalGreen100
-import com.example.ui.theme.NaturalGreen700
-import com.example.ui.theme.NaturalGreen900
-import com.example.ui.theme.NaturalNavBg
-import com.example.ui.theme.NaturalSurface
-import com.example.ui.theme.NaturalSurfaceVariant
-import com.example.ui.theme.NaturalTextPrimary
-import com.example.ui.theme.NaturalTextSecondary
-import com.example.ui.theme.Terracotta700
 import com.example.ui.viewmodel.ParentalControlViewModel
 
 class MainActivity : ComponentActivity() {
@@ -142,7 +140,7 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
 
     var isGuestAuthenticated by remember { mutableStateOf(false) }
     var showAccountProfileDialog by remember { mutableStateOf(false) }
-    var selectedNavTab by remember { mutableIntStateOf(0) }
+    var selectedNavTab by remember { mutableIntStateOf(1) } // Default to Tab 1: Device (FlashGet Hub)
     var showAddChildDialog by remember { mutableStateOf(false) }
     var showChildDropdown by remember { mutableStateOf(false) }
     var showPinDialogForChildMode by remember { mutableStateOf(false) }
@@ -184,8 +182,8 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
 
     if (showAddChildDialog) {
         AddChildDialog(
-            onAddChild = { name, age, avatarIndex, dailyLimit ->
-                viewModel.addChildProfile(name, age, avatarIndex, dailyLimit)
+            onAddChild = { name, age, avatarIdx, limitMins ->
+                viewModel.addChildProfile(name, age, avatarIdx, limitMins)
                 showAddChildDialog = false
             },
             onDismiss = { showAddChildDialog = false },
@@ -195,264 +193,165 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
 
     if (showPinDialogForChildMode) {
         PinKeypadDialog(
-            title = if (isHindi) "पैरेंट सुरक्षा पिन" else "Parent Security PIN",
-            subtitle = if (isHindi) "पैरेंट डैशबोर्ड में जाने के लिए पिन दर्ज करें (डिफ़ॉल्ट: 1234)" else "Enter 4-digit PIN (Default: 1234)",
-            onPinEntered = { pin ->
-                val ok = viewModel.verifyPin(pin)
+            title = if (isHindi) "पैरेंट मास्टर पिन दर्ज करें" else "Enter Parent Master PIN",
+            subtitle = if (isHindi) "चाइल्ड मोड से बाहर निकलने के लिए 4 अंकों का पिन दर्ज करें" else "Enter 4-digit PIN to exit Kid Safe Mode",
+            isHindi = isHindi,
+            onPinEntered = { enteredPin ->
+                val ok = viewModel.verifyPin(enteredPin)
                 if (ok) {
-                    showPinDialogForChildMode = false
                     viewModel.setChildMode(false)
+                    showPinDialogForChildMode = false
                 }
                 ok
             },
-            onDismiss = { showPinDialogForChildMode = false },
-            isHindi = isHindi
+            onDismiss = { showPinDialogForChildMode = false }
         )
     }
 
-    if (activeChild == null) {
-        // Loading state with Natural Tones
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(NaturalBg),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Shield, contentDescription = null, tint = NaturalGreen700, modifier = Modifier.size(56.dp))
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = if (isHindi) "ParentGuard लोड हो रहा है..." else "Loading ParentGuard...",
-                    fontWeight = FontWeight.Bold,
-                    color = NaturalGreen700
-                )
-            }
-        }
-        return
-    }
+    val child = activeChild ?: ChildProfile(
+        id = 1,
+        name = "Aarav",
+        age = 10,
+        avatarIndex = 0,
+        deviceModel = "Infinix X6823C",
+        batteryPercent = 25,
+        isDeviceOnline = true,
+        weekdayLimitMinutes = 120
+    )
 
-    val child = activeChild!!
-
-    // Child Mode takes over full UI if active
+    // Child Mode View
     if (isChildMode) {
         ChildModeScreen(
             child = child,
             apps = apps,
             tasks = tasks,
             isHindi = isHindi,
-            onExitChildMode = { viewModel.setChildMode(false) },
-            onRequestExtraTime = { mins -> viewModel.requestExtraTimeByChild(mins) },
-            onCompleteTask = { task -> viewModel.completeTaskByChild(task) },
-            onVerifyPin = { pin -> viewModel.verifyPin(pin) }
+            onExitChildMode = {
+                showPinDialogForChildMode = true
+            },
+            onRequestExtraTime = { mins ->
+                viewModel.addBonusMinutes(mins, "Child Request")
+            },
+            onCompleteTask = { task ->
+                viewModel.completeTaskByChild(task)
+            },
+            onVerifyPin = { pin ->
+                viewModel.verifyPin(pin)
+            }
         )
         return
     }
 
-    // Parent Mode Layout with Natural Tones
+    // PARENT MODE FLASHGET LAYOUT
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .background(NaturalBg),
-        topBar = {
-            TopAppBar(
-                navigationIcon = {
-                    Image(
-                        painter = painterResource(id = R.drawable.img_app_logo_1787118734434),
-                        contentDescription = "ParentGuard Digital Logo",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .padding(start = 12.dp, end = 4.dp)
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFF55B382).copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                    )
-                },
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { showChildDropdown = true }
-                            .padding(horizontal = 4.dp, vertical = 4.dp)
-                    ) {
-                        ChildAvatarCircle(
-                            avatarIndex = child.avatarIndex,
-                            name = child.name,
-                            size = 38.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = child.name,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 17.sp,
-                                    color = NaturalTextPrimary
-                                )
-                                Icon(
-                                    Icons.Default.ArrowDropDown,
-                                    contentDescription = "Switch child",
-                                    tint = NaturalTextSecondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Text(
-                                text = if (isHindi) "डिवाइस: ${child.deviceModel} • 🔋 ${child.batteryPercent}%" else "Device: ${child.deviceModel} • 🔋 ${child.batteryPercent}%",
-                                fontSize = 11.sp,
-                                color = NaturalTextSecondary
-                            )
-                        }
-
-                        // Child Profile Dropdown Menu
-                        DropdownMenu(
-                            expanded = showChildDropdown,
-                            onDismissRequest = { showChildDropdown = false }
-                        ) {
-                            allChildren.forEach { childProfile ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            ChildAvatarCircle(
-                                                avatarIndex = childProfile.avatarIndex,
-                                                name = childProfile.name,
-                                                size = 30.dp
-                                            )
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Column {
-                                                Text(childProfile.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                                Text("${childProfile.deviceModel} • ${childProfile.age} yrs", fontSize = 11.sp, color = NaturalTextSecondary)
-                                            }
-                                        }
-                                    },
-                                    onClick = {
-                                        viewModel.selectChild(childProfile.id)
-                                        showChildDropdown = false
-                                    }
-                                )
-                            }
-
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.PersonAdd, contentDescription = null, tint = NaturalGreen700, modifier = Modifier.size(20.dp))
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Text(if (isHindi) "+ नया बच्चा जोड़ें" else "+ Add Child", fontWeight = FontWeight.Bold, color = NaturalGreen700)
-                                    }
-                                },
-                                onClick = {
-                                    showChildDropdown = false
-                                    showAddChildDialog = true
-                                }
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    // Language Switcher Toggle
-                    IconButton(
-                        onClick = { viewModel.toggleLanguage() },
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(NaturalSurfaceVariant)
-                            .testTag("toggle_language_button")
-                    ) {
-                        Text(
-                            text = if (isHindi) "EN" else "हिं",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = NaturalTextPrimary
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Parent Account / Email Profile Button
-                    IconButton(
-                        onClick = { showAccountProfileDialog = true },
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(NaturalGreen100)
-                            .testTag("parent_account_profile_button")
-                    ) {
-                        Icon(
-                            Icons.Default.AccountCircle,
-                            contentDescription = "Parent Account Profile",
-                            tint = NaturalGreen700,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Kid Mode Switcher Button with Natural Tones pill
-                    IconButton(
-                        onClick = { viewModel.setChildMode(true) },
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(NaturalSurfaceVariant)
-                            .testTag("enter_child_mode_button")
-                    ) {
-                        Icon(
-                            Icons.Default.ChildCare,
-                            contentDescription = "Switch to Child View",
-                            tint = NaturalTextPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = NaturalBg
-                )
-            )
-        },
+            .background(Color(0xFFF4F6FB)),
         bottomBar = {
-            // Natural Tones NavigationBar (#F3F6EF with #DDE5D9 top border)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(NaturalNavBg)
-                    .border(width = 1.dp, color = NaturalBorder)
+            // FLASHGET BOTTOM NAVIGATION: Notice | Device (Elevated center) | Me
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 8.dp
             ) {
-                NavigationBar(
-                    containerColor = NaturalNavBg,
-                    tonalElevation = 0.dp,
+                Row(
                     modifier = Modifier
+                        .fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.navigationBars)
-                        .testTag("parent_bottom_nav")
+                        .height(64.dp)
+                        .padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val navItems = listOf(
-                        Triple(0, Icons.Default.Dashboard, if (isHindi) "होम" else "Home"),
-                        Triple(1, Icons.Default.Apps, if (isHindi) "ऐप्स" else "Apps"),
-                        Triple(2, Icons.Default.Schedule, if (isHindi) "शेड्यूल" else "Schedule"),
-                        Triple(3, Icons.Default.EmojiEvents, if (isHindi) "इनाम" else "Rewards"),
-                        Triple(4, Icons.Default.History, if (isHindi) "रिपोर्ट्स" else "Reports")
-                    )
+                    // TAB 0: NOTICE
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .clickable { selectedNavTab = 0 }
+                            .padding(8.dp)
+                            .testTag("nav_notice")
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (logs.isNotEmpty()) {
+                                    Badge(containerColor = Color(0xFFFF4757)) {
+                                        Text("${logs.size.coerceAtMost(9)}", fontSize = 9.sp, color = Color.White)
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notice",
+                                tint = if (selectedNavTab == 0) Color(0xFF6C5CE7) else Color(0xFFA4B0BE),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = if (isHindi) "नोटिस" else "Notice",
+                            fontSize = 11.sp,
+                            fontWeight = if (selectedNavTab == 0) FontWeight.Bold else FontWeight.Normal,
+                            color = if (selectedNavTab == 0) Color(0xFF6C5CE7) else Color(0xFFA4B0BE)
+                        )
+                    }
 
-                    navItems.forEach { (index, icon, label) ->
-                        val isSelected = selectedNavTab == index
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = { selectedNavTab = index },
-                            icon = { Icon(icon, contentDescription = label) },
-                            label = {
-                                Text(
-                                    text = label,
-                                    fontSize = 10.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = NaturalGreen700,
-                                selectedTextColor = NaturalGreen700,
-                                indicatorColor = NaturalGreen100,
-                                unselectedIconColor = NaturalTextSecondary,
-                                unselectedTextColor = NaturalTextSecondary
-                            ),
-                            modifier = Modifier.testTag("nav_item_$index")
+                    // TAB 1: DEVICE (Center Elevated Purple Floating Button)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .clickable { selectedNavTab = 1 }
+                            .offset(y = (-10).dp)
+                            .testTag("nav_device")
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .shadow(6.dp, CircleShape)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(Color(0xFF6C5CE7), Color(0xFF5B48D9))
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Smartphone,
+                                contentDescription = "Device",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (isHindi) "डिवाइस" else "Device",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedNavTab == 1) Color(0xFF6C5CE7) else Color(0xFFA4B0BE)
+                        )
+                    }
+
+                    // TAB 2: ME
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .clickable { selectedNavTab = 2 }
+                            .padding(8.dp)
+                            .testTag("nav_me")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Me",
+                            tint = if (selectedNavTab == 2) Color(0xFF6C5CE7) else Color(0xFFA4B0BE),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = if (isHindi) "मैं (Me)" else "Me",
+                            fontSize = 11.sp,
+                            fontWeight = if (selectedNavTab == 2) FontWeight.Bold else FontWeight.Normal,
+                            color = if (selectedNavTab == 2) Color(0xFF6C5CE7) else Color(0xFFA4B0BE)
                         )
                     }
                 }
@@ -465,7 +364,15 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
             modifier = Modifier.padding(paddingValues)
         ) { tab ->
             when (tab) {
-                0 -> DashboardScreen(
+                // Tab 0: Notice (Activity logs, alarms, notifications feed)
+                0 -> ActivityLogScreen(
+                    logs = logs,
+                    isHindi = isHindi,
+                    onClearLogs = { viewModel.clearLogs() }
+                )
+
+                // Tab 1: Device (FlashGet Control Hub)
+                1 -> DashboardScreen(
                     child = child,
                     allProfiles = allChildren,
                     apps = apps,
@@ -502,35 +409,152 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
                     onClearSmsLogs = { viewModel.clearSmsMessages() },
                     onClearYouTubeHistory = { viewModel.clearYouTubeWatchHistory() }
                 )
-                1 -> AppsControlScreen(
-                    apps = apps,
-                    isHindi = isHindi,
-                    onToggleBlock = { app -> viewModel.toggleAppBlock(app) },
-                    onSetAppLimit = { ruleId, limit -> viewModel.setAppLimit(ruleId, limit) },
-                    onToggleAlwaysAllowed = { ruleId, isAllowed -> viewModel.toggleAlwaysAllowed(ruleId, isAllowed) }
-                )
-                2 -> ScheduleRulesScreen(
-                    child = child,
-                    webRules = webRules,
-                    isHindi = isHindi,
-                    onUpdateChild = { updated -> viewModel.updateChildSettings(updated) },
-                    onAddWebRule = { domain, category -> viewModel.addWebFilter(domain, category) },
-                    onDeleteWebRule = { ruleId -> viewModel.removeWebFilter(ruleId) }
-                )
-                3 -> RewardsScreen(
-                    tasks = tasks,
-                    childName = child.name,
-                    bonusEarnedToday = child.bonusMinutesToday,
-                    isHindi = isHindi,
-                    onAddTask = { title, titleHi, mins -> viewModel.addRewardTask(title, titleHi, mins) },
-                    onApproveTask = { task -> viewModel.approveTaskReward(task) },
-                    onDeleteTask = { taskId -> viewModel.deleteTask(taskId) }
-                )
-                4 -> ActivityLogScreen(
-                    logs = logs,
-                    isHindi = isHindi,
-                    onClearLogs = { viewModel.clearLogs() }
-                )
+
+                // Tab 2: Me (Settings, Parent Account, Child Mode, Pin, Language)
+                2 -> Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFF4F6FB))
+                        .padding(16.dp)
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .border(2.dp, Color(0xFF6C5CE7), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.user_custom_logo_1787213664319),
+                                    contentDescription = "User Photo Logo",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = currentUser?.name ?: "Musahid Raza",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 17.sp,
+                                    color = Color(0xFF1E1E2E)
+                                )
+                                Text(
+                                    text = currentUser?.email ?: "musahidraza78600@gmail.com",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF6C7086)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            // Language switch
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { viewModel.toggleLanguage() }
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Language, contentDescription = null, tint = Color(0xFF6C5CE7))
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(if (isHindi) "भाषा (Language)" else "Language", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                }
+                                Text(if (isHindi) "हिन्दी" else "English", color = Color(0xFF6C5CE7), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+
+                            HorizontalDivider(color = Color(0xFFECEFF8))
+
+                            // Enter Kid Safe Mode
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { viewModel.setChildMode(true) }
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.ChildCare, contentDescription = null, tint = Color(0xFF00B894))
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(if (isHindi) "चाइल्ड सेफ मोड चालू करें" else "Switch to Kid Mode", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                }
+                                Text(">", color = Color.Gray)
+                            }
+
+                            HorizontalDivider(color = Color(0xFFECEFF8))
+
+                            // Account Profile
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showAccountProfileDialog = true }
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF6C5CE7))
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(if (isHindi) "खाता और सुरक्षा सेटिंग्स" else "Account & Security Settings", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                }
+                                Text(">", color = Color.Gray)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // App Logo & Version Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(1.5.dp, Color(0xFF6C5CE7), RoundedCornerShape(12.dp))
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.user_custom_logo_1787213664319),
+                                    contentDescription = "App Icon",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("ParentGuard AI", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1E1E2E))
+                                Text(if (isHindi) "कस्टम ऐप लोगो एक्टिव • v1.0" else "Custom App Logo Active • v1.0", fontSize = 11.sp, color = Color(0xFF6C5CE7))
+                            }
+                        }
+                    }
+                }
             }
         }
     }
