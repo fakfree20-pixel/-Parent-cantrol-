@@ -1,11 +1,26 @@
-<div align="center">
+# 🛡️ ParentGuard - Parental Control & Child Monitoring App
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+An intelligent Android application built with **Jetpack Compose**, **Material Design 3**, and modern Android architecture for real-time parental monitoring, screen time tracking, and child safety.
 
-  <h1>Built with AI Studio</h2>
+---
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## 📥 How to Download APK (Android App)
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+### Option 1: Direct Download from GitHub Releases
+1. Click on **[Releases](../../releases)** on the right side of this GitHub repository.
+2. Under **Assets**, click on **`ParentGuard.apk`** to download directly to your Android mobile.
+3. Open the downloaded APK on your mobile and tap **Install**.
 
-</div>
+### Option 2: Download from GitHub Actions
+1. Go to the **Actions** tab in this GitHub repository.
+2. Click on the latest workflow run: **"Build & Release Android APK"**.
+3. Scroll down to **Artifacts** and click **`ParentGuard-APK`** (ZIP containing the APK).
+
+---
+
+## ✨ Features
+- 📊 **Real-time Screen Time Tracking** with daily limits and app categorization.
+- 📍 **GPS Live Location & Safe Zones (Geofencing)**.
+- 📱 **App Block & Schedule Timers**.
+- 🔔 **Real-time SOS and Alert Notifications**.
+- 🛡️ **Modern Material 3 Theme** with smooth Compose animations.
