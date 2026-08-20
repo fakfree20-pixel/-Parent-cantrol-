@@ -23,32 +23,30 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Gradle
+      - name: Setup Android SDK Environment
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}" >> $GITHUB_ENV
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || yes | sdkmanager --licenses 2>/dev/null || true
+
+      - name: Setup Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
           validate-wrappers: false
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK 36
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" || true
-
-      - name: Restore Debug Keystore
+      - name: Restore or Generate Debug Keystore
         run: |
           if [ -f debug.keystore.base64 ]; then
             base64 -d debug.keystore.base64 > debug.keystore
-          else
+          elif [ ! -f debug.keystore ]; then
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
-      - name: Build APK
+      - name: Build Android APK
         run: |
           chmod +x gradlew 2>/dev/null || true
-          ./gradlew :app:assembleRelease --stacktrace || ./gradlew :app:assembleDebug --stacktrace
+          gradle :app:assembleRelease --stacktrace || ./gradlew :app:assembleRelease --stacktrace || gradle :app:assembleDebug --stacktrace || ./gradlew :app:assembleDebug --stacktrace
 
       - name: Copy & Rename APK
         run: |
@@ -62,6 +60,8 @@ jobs:
           else
             find app/build/outputs/apk -name "*.apk" -exec cp {} build-apks/ParentControlMD.apk \;
           fi
+          echo "APK successfully prepared at build-apks/ParentControlMD.apk"
+          ls -la build-apks/
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
