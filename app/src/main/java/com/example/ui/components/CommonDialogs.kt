@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,8 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -711,3 +714,206 @@ fun AddTaskDialog(
         }
     )
 }
+
+// Subscription & VIP Upgrade Dialog (FlashGet Kids Style)
+@Composable
+fun SubscriptionUpgradeDialog(
+    isHindi: Boolean,
+    onDismiss: () -> Unit
+) {
+    var selectedPlan by remember { mutableIntStateOf(1) } // 0 = Monthly, 1 = Yearly (Best Value), 2 = Lifetime
+    var isSubscribed by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = null,
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header with VIP Badge
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(Color(0xFFFFD700), Color(0xFFFFA500))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("⭐", fontSize = 28.sp)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = if (isHindi) "प्रीमियम वीआईपी अनलॉक करें" else "Unlock VIP Full Access",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF1E1E2E),
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = if (isHindi) "रिमोट कैमरा, स्क्रीन मिररिंग और वन-वे ऑडियो असीमित उपयोग करें" else "Unlimited Remote Camera, Screen Mirroring & One-Way Audio",
+                    fontSize = 12.sp,
+                    color = Color(0xFF6C7086),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Plan Selector Cards
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Plan 1: 1 Month
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(
+                                width = if (selectedPlan == 0) 2.dp else 1.dp,
+                                color = if (selectedPlan == 0) Color(0xFF6C5CE7) else Color(0xFFE2E8F0),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable { selectedPlan = 0 },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selectedPlan == 0) Color(0xFFF3F0FF) else Color.White
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(if (isHindi) "1 महीना" else "1 Month", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2E))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("₹399", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF6C5CE7))
+                            Text(if (isHindi) "प्रति माह" else "/mo", fontSize = 9.sp, color = Color.Gray)
+                        }
+                    }
+
+                    // Plan 2: 1 Year (Best Value)
+                    Card(
+                        modifier = Modifier
+                            .weight(1.1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(
+                                width = if (selectedPlan == 1) 2.dp else 1.dp,
+                                color = if (selectedPlan == 1) Color(0xFF6C5CE7) else Color(0xFFE2E8F0),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable { selectedPlan = 1 },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selectedPlan == 1) Color(0xFFF3F0FF) else Color.White
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Color(0xFFFF4757))
+                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                            ) {
+                                Text(if (isHindi) "लोकप्रिय" else "BEST VALUE", fontSize = 7.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(if (isHindi) "1 वर्ष" else "1 Year", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2E))
+                            Text("₹1,999", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF6C5CE7))
+                            Text(if (isHindi) "₹166/माह" else "₹166/mo", fontSize = 9.sp, color = Color(0xFF2ED573), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    // Plan 3: Lifetime
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(
+                                width = if (selectedPlan == 2) 2.dp else 1.dp,
+                                color = if (selectedPlan == 2) Color(0xFF6C5CE7) else Color(0xFFE2E8F0),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable { selectedPlan = 2 },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selectedPlan == 2) Color(0xFFF3F0FF) else Color.White
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(if (isHindi) "लाइफटाइम" else "Lifetime", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1E2E))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("₹3,499", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF6C5CE7))
+                            Text(if (isHindi) "एक बार" else "One-time", fontSize = 9.sp, color = Color.Gray)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Feature Highlights
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFF8F9FA))
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val features = if (isHindi) listOf(
+                        "✔ लाइव रिमोट फ्रंट व बैक कैमरा मॉनिटरिंग",
+                        "✔ एचडी स्क्रीन मिररिंग और रियल-टाइम व्यू",
+                        "✔ वन-वे और टू-वे ऑडियो लिसनिंग",
+                        "✔ जियोफेंस अलर्ट्स और अनइंस्टॉल प्रोटेक्शन"
+                    ) else listOf(
+                        "✔ Live Remote Front & Back Camera Access",
+                        "✔ HD Screen Mirroring & Real-Time Sync",
+                        "✔ One-Way & Two-Way High-Clear Audio",
+                        "✔ Unlimited Geofence & Anti-Uninstall Shield"
+                    )
+                    features.forEach { feat ->
+                        Text(feat, fontSize = 11.sp, color = Color(0xFF2D3436), fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    isSubscribed = true
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7))
+            ) {
+                Text(
+                    text = if (isHindi) "अभी सब्सक्राइब करें (तुरंत चालू)" else "Subscribe Now & Unlock",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isHindi) "बाद में देखें" else "Maybe Later", color = Color(0xFF6C7086), fontSize = 12.sp)
+            }
+        }
+    )
+}
+

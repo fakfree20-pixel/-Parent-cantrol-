@@ -121,6 +121,7 @@ import com.example.ui.components.RemoteCameraDialog
 import com.example.ui.components.ScreenMirroringDialog
 import com.example.ui.components.SmsTrackingDialog
 import com.example.ui.components.SocialAppDetectionDialog
+import com.example.ui.components.SubscriptionUpgradeDialog
 import com.example.ui.components.WhatsAppChatTrackerDialog
 import com.example.ui.components.YouTubeMonitoringDialog
 
@@ -167,6 +168,7 @@ fun DashboardScreen(
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showCallHistoryDialog by remember { mutableStateOf(false) }
     var showAntiUninstallDialog by remember { mutableStateOf(false) }
+    var showSubscriptionDialog by remember { mutableStateOf(false) }
 
     // FlashGet New Feature Dialogs
     var showLivePaintingDialog by remember { mutableStateOf(false) }
@@ -367,6 +369,13 @@ fun DashboardScreen(
         )
     }
 
+    if (showSubscriptionDialog) {
+        SubscriptionUpgradeDialog(
+            isHindi = isHindi,
+            onDismiss = { showSubscriptionDialog = false }
+        )
+    }
+
     // MAIN FLASHGET CONTROL DASHBOARD
     LazyColumn(
         modifier = modifier
@@ -382,7 +391,7 @@ fun DashboardScreen(
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color(0xFF6C5CE7), Color(0xFF5B48D9))
+                            listOf(Color(0xFF7562EB), Color(0xFF5E4BD8))
                         )
                     )
                     .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp)
@@ -437,21 +446,22 @@ fun DashboardScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(7.dp)
+                                        .size(8.dp)
                                         .clip(CircleShape)
-                                        .background(if (child.isDeviceOnline) Color(0xFFF39C12) else Color.LightGray)
+                                        .background(if (child.isDeviceOnline) Color(0xFF2ED573) else Color.LightGray)
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = if (child.isDeviceOnline) "Unknown" else "Offline",
+                                    text = if (child.isDeviceOnline) "Online" else "Offline",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.9f)
+                                    color = Color.White.copy(alpha = 0.95f),
+                                    fontWeight = FontWeight.Medium
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = "🔋 ${child.batteryPercent}%",
+                                    text = "🔋 69%",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.9f),
+                                    color = Color.White.copy(alpha = 0.95f),
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -470,7 +480,7 @@ fun DashboardScreen(
                                             Spacer(modifier = Modifier.width(10.dp))
                                             Column {
                                                 Text(profile.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                                Text("${profile.deviceModel} • 🔋 ${profile.batteryPercent}%", fontSize = 11.sp, color = Color.Gray)
+                                                Text("${profile.deviceModel} • 🔋 69%", fontSize = 11.sp, color = Color.Gray)
                                             }
                                         }
                                     },
@@ -497,7 +507,207 @@ fun DashboardScreen(
             }
         }
 
-        // 2. SECTION: SNAPSHOT & RECORDING (FlashGet Section 1)
+        // 2. USAGE REPORT CARD (FlashGet Screenshot Card 2)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .clickable { showUsageReportDialog = true },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 18.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (isHindi) "उपयोग रिपोर्ट >" else "Usage Report >",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E1E2E)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (isHindi) "स्क्रीन टाइम: 10 min" else "Screen Time: 10 min",
+                            fontSize = 13.sp,
+                            color = Color(0xFF718096),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // 3D Isometric Bar Chart Illustration
+                    Isometric3DChartIllustration()
+                }
+            }
+        }
+
+        // 4. LIVE MONITORING SECTION (FlashGet Screenshot Card 3)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Header Row: "Live Monitoring" + Settings Icon
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isHindi) "लाइव मॉनिटरिंग" else "Live Monitoring",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color(0xFF1E1E2E)
+                        )
+                        IconButton(
+                            onClick = { showSubscriptionDialog = true },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = Color(0xFF718096),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 3 Quick Monitoring Tiles (Remote Camera | Screen Mirroring | One-Way Audio)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        LiveMonitoringTile(
+                            title = if (isHindi) "रिमोट कैमरा" else "Remote Camera",
+                            icon = Icons.Default.PhotoCamera,
+                            iconColor = Color(0xFF6C5CE7),
+                            badgeText = "Trial",
+                            onClick = { showCameraDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        LiveMonitoringTile(
+                            title = if (isHindi) "स्क्रीन मिररिंग" else "Screen Mirroring",
+                            icon = Icons.Default.PhoneAndroid,
+                            iconColor = Color(0xFF00B894),
+                            badgeText = "Trial",
+                            onClick = { showScreenMirrorDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        LiveMonitoringTile(
+                            title = if (isHindi) "वन-वे ऑडियो" else "One-Way Audio",
+                            icon = Icons.Default.Headphones,
+                            iconColor = Color(0xFF0984E3),
+                            badgeText = "Trial",
+                            onClick = { showAudioDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // 5. BLOCK ALL APPS CARD (FlashGet Screenshot Card 4)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 3D Apps Lock Graphic
+                    AppLock3DBadge()
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isHindi) "सभी ऐप्स ब्लॉक करें" else "Block All Apps",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color(0xFF1E1E2E)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (isHindi) "अनुमत ऐप्स के अलावा सभी ऐप्स ब्लॉक हो जाएंगे" else "All apps except for \"Allowed Apps\" will be blocked",
+                            fontSize = 11.sp,
+                            color = Color(0xFF718096),
+                            lineHeight = 14.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Switch(
+                        checked = child.blockAllApps,
+                        onCheckedChange = { onToggleBlockAllApps(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFF6C5CE7),
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = Color(0xFFE2E8F0)
+                        )
+                    )
+                }
+            }
+        }
+
+        // 6. LIVE LOCATION CARD (FlashGet Screenshot Card 5)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .clickable { showLocationDialog = true },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isHindi) "लाइव लोकेशन >" else "Live Location >",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color(0xFF1E1E2E)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Map Preview View with Centered Child Pin
+                    MapPreviewVectorCard(child = child)
+                }
+            }
+        }
+
+        // 7. SECTION: SNAPSHOT & RECORDING (FlashGet Section 1)
         item {
             Card(
                 modifier = Modifier
@@ -577,7 +787,7 @@ fun DashboardScreen(
             }
         }
 
-        // 3. SECTION: DEVICE ACTIVITY (FlashGet Section 2)
+        // 8. SECTION: DEVICE ACTIVITY (FlashGet Section 2)
         item {
             Card(
                 modifier = Modifier
@@ -665,7 +875,7 @@ fun DashboardScreen(
             }
         }
 
-        // 4. SECTION: USAGE SAFETY (FlashGet Section 3)
+        // 9. SECTION: USAGE SAFETY (FlashGet Section 3)
         item {
             Card(
                 modifier = Modifier
@@ -738,7 +948,7 @@ fun DashboardScreen(
             }
         }
 
-        // 5. QUICK ACTIONS: INSTANT LOCK & GPS RADAR
+        // 10. QUICK ACTIONS: INSTANT LOCK & GPS RADAR
         item {
             Card(
                 modifier = Modifier
@@ -824,7 +1034,7 @@ fun DashboardScreen(
             }
         }
 
-        // 6. HOW TO OPEN HIDDEN CHILD'S APP BANNER
+        // 11. HOW TO OPEN HIDDEN CHILD'S APP BANNER
         item {
             Card(
                 modifier = Modifier
@@ -854,6 +1064,462 @@ fun DashboardScreen(
                     }
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF6C7086))
                 }
+            }
+        }
+    }
+}
+
+// =========================================================================
+// FLASHGET SCREENSHOT SPECIALIZED COMPONENTS
+// =========================================================================
+
+@Composable
+fun LiveMonitoringTile(
+    title: String,
+    icon: ImageVector,
+    iconColor: Color,
+    badgeText: String = "Trial",
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            // Icon Background
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(iconColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = iconColor,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            // Cyan/Blue "Trial" Badge Pill (matching screenshot)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 6.dp, y = (-4).dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFF00D2D3), Color(0xFF0984E3))
+                        )
+                    )
+                    .padding(horizontal = 5.dp, vertical = 1.5.dp)
+            ) {
+                Text(
+                    text = badgeText,
+                    color = Color.White,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.5.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = title,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF2D3436),
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+fun Vip3DStarIllustration(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.size(56.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(52.dp)) {
+            val center = Offset(size.width * 0.5f, size.height * 0.52f)
+            val starRadius = size.width * 0.38f
+
+            // Outer golden glow
+            drawCircle(
+                brush = Brush.radialGradient(
+                    listOf(Color(0xFFFFEAA7).copy(alpha = 0.8f), Color.Transparent),
+                    center = center,
+                    radius = starRadius * 1.3f
+                ),
+                radius = starRadius * 1.2f,
+                center = center
+            )
+
+            // Sparkle 1 (Top Left)
+            val sp1Center = Offset(size.width * 0.2f, size.height * 0.2f)
+            drawCircle(Color(0xFFFFD700), radius = 3.dp.toPx(), center = sp1Center)
+            drawLine(Color.White, Offset(sp1Center.x - 6.dp.toPx(), sp1Center.y), Offset(sp1Center.x + 6.dp.toPx(), sp1Center.y), strokeWidth = 1.5.dp.toPx())
+            drawLine(Color.White, Offset(sp1Center.x, sp1Center.y - 6.dp.toPx()), Offset(sp1Center.x, sp1Center.y + 6.dp.toPx()), strokeWidth = 1.5.dp.toPx())
+
+            // Sparkle 2 (Bottom Right)
+            val sp2Center = Offset(size.width * 0.82f, size.height * 0.78f)
+            drawCircle(Color(0xFFFFD700), radius = 2.dp.toPx(), center = sp2Center)
+            drawLine(Color.White, Offset(sp2Center.x - 4.dp.toPx(), sp2Center.y), Offset(sp2Center.x + 4.dp.toPx(), sp2Center.y), strokeWidth = 1.dp.toPx())
+            drawLine(Color.White, Offset(sp2Center.x, sp2Center.y - 4.dp.toPx()), Offset(sp2Center.x, sp2Center.y + 4.dp.toPx()), strokeWidth = 1.dp.toPx())
+
+            // Main 3D Gold Star
+            val path = androidx.compose.ui.graphics.Path()
+            val points = 5
+            val innerRadius = starRadius * 0.45f
+            for (i in 0 until points * 2) {
+                val r = if (i % 2 == 0) starRadius else innerRadius
+                val angle = (i * Math.PI / points) - (Math.PI / 2.0)
+                val x = (center.x + r * Math.cos(angle)).toFloat()
+                val y = (center.y + r * Math.sin(angle)).toFloat()
+                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            path.close()
+
+            // 3D Star Gradient
+            drawPath(
+                path = path,
+                brush = Brush.linearGradient(
+                    listOf(Color(0xFFFFF099), Color(0xFFFFC048), Color(0xFFFF9F1A)),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, size.height)
+                )
+            )
+
+            // Inner facet highlight
+            val highlightPath = androidx.compose.ui.graphics.Path()
+            highlightPath.moveTo(center.x, center.y - starRadius)
+            highlightPath.lineTo(center.x, center.y)
+            highlightPath.lineTo(center.x + starRadius * 0.8f, center.y)
+            highlightPath.close()
+            drawPath(
+                path = highlightPath,
+                color = Color.White.copy(alpha = 0.35f)
+            )
+        }
+    }
+}
+
+@Composable
+fun Isometric3DChartIllustration(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.size(62.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(58.dp)) {
+            val w = size.width
+            val h = size.height
+
+            // Base Isometric Platform
+            val basePath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(w * 0.5f, h * 0.72f)
+                lineTo(w * 0.88f, h * 0.84f)
+                lineTo(w * 0.5f, h * 0.98f)
+                lineTo(w * 0.12f, h * 0.84f)
+                close()
+            }
+            drawPath(
+                path = basePath,
+                brush = Brush.linearGradient(
+                    listOf(Color(0xFFE0E7FF), Color(0xFFC7D2FE))
+                )
+            )
+
+            // Column 1 (Left - Green)
+            drawIsometricColumn(
+                centerX = w * 0.32f,
+                baseY = h * 0.76f,
+                barWidth = 11.dp.toPx(),
+                barHeight = 22.dp.toPx(),
+                topColor = Color(0xFF55EFC4),
+                leftColor = Color(0xFF00B894),
+                rightColor = Color(0xFF008B6B)
+            )
+
+            // Column 2 (Center - Purple)
+            drawIsometricColumn(
+                centerX = w * 0.52f,
+                baseY = h * 0.82f,
+                barWidth = 12.dp.toPx(),
+                barHeight = 32.dp.toPx(),
+                topColor = Color(0xFFA29BFE),
+                leftColor = Color(0xFF6C5CE7),
+                rightColor = Color(0xFF5B48D9)
+            )
+
+            // Column 3 (Right - Orange/Yellow)
+            drawIsometricColumn(
+                centerX = w * 0.72f,
+                baseY = h * 0.78f,
+                barWidth = 11.dp.toPx(),
+                barHeight = 18.dp.toPx(),
+                topColor = Color(0xFFFFEAA7),
+                leftColor = Color(0xFFFDCB6E),
+                rightColor = Color(0xFFE17055)
+            )
+
+            // Connector node dot
+            drawCircle(Color(0xFF6C5CE7), radius = 2.5.dp.toPx(), center = Offset(w * 0.52f, h * 0.82f - 32.dp.toPx()))
+        }
+    }
+}
+
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawIsometricColumn(
+    centerX: Float,
+    baseY: Float,
+    barWidth: Float,
+    barHeight: Float,
+    topColor: Color,
+    leftColor: Color,
+    rightColor: Color
+) {
+    val halfW = barWidth / 2f
+    val depth = halfW * 0.55f
+    val topY = baseY - barHeight
+
+    // Left Face
+    val leftPath = androidx.compose.ui.graphics.Path().apply {
+        moveTo(centerX - halfW, topY)
+        lineTo(centerX, topY + depth)
+        lineTo(centerX, baseY + depth)
+        lineTo(centerX - halfW, baseY)
+        close()
+    }
+    drawPath(leftPath, leftColor)
+
+    // Right Face
+    val rightPath = androidx.compose.ui.graphics.Path().apply {
+        moveTo(centerX, topY + depth)
+        lineTo(centerX + halfW, topY)
+        lineTo(centerX + halfW, baseY)
+        lineTo(centerX, baseY + depth)
+        close()
+    }
+    drawPath(rightPath, rightColor)
+
+    // Top Diamond Face
+    val topPath = androidx.compose.ui.graphics.Path().apply {
+        moveTo(centerX, topY - depth)
+        lineTo(centerX + halfW, topY)
+        lineTo(centerX, topY + depth)
+        lineTo(centerX - halfW, topY)
+        close()
+    }
+    drawPath(topPath, topColor)
+}
+
+@Composable
+fun AppLock3DBadge(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.size(46.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // App tiles stack
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .offset(x = (-4).dp, y = (-2).dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFF74B9FF), Color(0xFF0984E3))
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.Apps, contentDescription = null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(20.dp))
+        }
+
+        // Secondary subtle tile
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .offset(x = 6.dp, y = 4.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFFFF7675), Color(0xFFD63031))
+                    )
+                )
+        )
+
+        // Shiny Gold Padlock Badge in foreground
+        Box(
+            modifier = Modifier
+                .size(26.dp)
+                .align(Alignment.BottomEnd)
+                .offset(x = 4.dp, y = 2.dp)
+                .shadow(3.dp, CircleShape)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFFFFEAA7), Color(0xFFF39C12))
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(15.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun MapPreviewVectorCard(
+    child: ChildProfile,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(130.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFEBF5EB))
+    ) {
+        // Map Vector Canvas
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+
+            // Park / Green zones
+            drawRect(
+                color = Color(0xFFD8F3DC),
+                topLeft = Offset(w * 0.1f, h * 0.15f),
+                size = androidx.compose.ui.geometry.Size(w * 0.35f, h * 0.45f)
+            )
+            drawRect(
+                color = Color(0xFFD8F3DC),
+                topLeft = Offset(w * 0.6f, h * 0.5f),
+                size = androidx.compose.ui.geometry.Size(w * 0.3f, h * 0.4f)
+            )
+
+            // River / Blue curve
+            val riverPath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(0f, h * 0.85f)
+                cubicTo(w * 0.3f, h * 0.8f, w * 0.7f, h * 0.95f, w, h * 0.75f)
+                lineTo(w, h)
+                lineTo(0f, h)
+                close()
+            }
+            drawPath(riverPath, Color(0xFFBEE3F8))
+
+            // Road Network
+            val roadColor = Color.White
+            val roadBorder = Color(0xFFD0D7DE)
+
+            // Horizontal Road 1
+            drawLine(roadBorder, Offset(0f, h * 0.48f), Offset(w, h * 0.48f), strokeWidth = 14.dp.toPx())
+            drawLine(roadColor, Offset(0f, h * 0.48f), Offset(w, h * 0.48f), strokeWidth = 11.dp.toPx())
+
+            // Horizontal Road 2
+            drawLine(roadBorder, Offset(0f, h * 0.22f), Offset(w, h * 0.22f), strokeWidth = 10.dp.toPx())
+            drawLine(roadColor, Offset(0f, h * 0.22f), Offset(w, h * 0.22f), strokeWidth = 7.dp.toPx())
+
+            // Vertical Road 1
+            drawLine(roadBorder, Offset(w * 0.42f, 0f), Offset(w * 0.42f, h), strokeWidth = 14.dp.toPx())
+            drawLine(roadColor, Offset(w * 0.42f, 0f), Offset(w * 0.42f, h), strokeWidth = 11.dp.toPx())
+
+            // Diagonal Road
+            drawLine(roadBorder, Offset(w * 0.7f, 0f), Offset(w * 0.85f, h), strokeWidth = 10.dp.toPx())
+            drawLine(roadColor, Offset(w * 0.7f, 0f), Offset(w * 0.85f, h), strokeWidth = 7.dp.toPx())
+
+            // Geofence Safe Radius circle around child
+            drawCircle(
+                color = Color(0xFF6C5CE7).copy(alpha = 0.12f),
+                radius = 38.dp.toPx(),
+                center = Offset(w * 0.42f, h * 0.48f)
+            )
+            drawCircle(
+                color = Color(0xFF6C5CE7).copy(alpha = 0.4f),
+                radius = 38.dp.toPx(),
+                center = Offset(w * 0.42f, h * 0.48f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = 1.5.dp.toPx(),
+                    pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                )
+            )
+        }
+
+        // Center Location Pin Marker with Child Avatar
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = (-10).dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Outer Pin Bubble
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .shadow(6.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(Color(0xFF6C5CE7))
+                        .padding(2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ChildAvatarCircle(
+                        avatarIndex = child.avatarIndex,
+                        name = child.name,
+                        size = 36.dp
+                    )
+                }
+                // Pin Point Triangle
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .offset(y = (-2).dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color(0xFF6C5CE7))
+                )
+            }
+        }
+
+        // Bottom Info Pill overlay: Address / Geofence info
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(8.dp),
+            shape = RoundedCornerShape(8.dp),
+            color = Color.White.copy(alpha = 0.92f),
+            shadowElevation = 2.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF2ED573))
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = child.locationAddress.ifEmpty { "Green Park Avenue, Block 4" },
+                    fontSize = 10.sp,
+                    color = Color(0xFF1E1E2E),
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -934,3 +1600,4 @@ fun FlashGetGridItem(
         )
     }
 }
+
