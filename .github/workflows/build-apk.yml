@@ -18,13 +18,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          validate-wrappers: false
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -45,26 +48,26 @@ jobs:
       - name: Build APK
         run: |
           chmod +x gradlew 2>/dev/null || true
-          ./gradlew assembleRelease || ./gradlew assembleDebug || gradle assembleRelease || gradle assembleDebug
+          ./gradlew :app:assembleRelease --stacktrace || ./gradlew :app:assembleDebug --stacktrace
 
       - name: Copy & Rename APK
         run: |
           mkdir -p build-apks
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
-            cp app/build/outputs/apk/release/app-release.apk build-apks/ParentGuard.apk
+            cp app/build/outputs/apk/release/app-release.apk build-apks/ParentControlMD.apk
           elif [ -f app/build/outputs/apk/release/app-release-unsigned.apk ]; then
-            cp app/build/outputs/apk/release/app-release-unsigned.apk build-apks/ParentGuard.apk
+            cp app/build/outputs/apk/release/app-release-unsigned.apk build-apks/ParentControlMD.apk
           elif [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp app/build/outputs/apk/debug/app-debug.apk build-apks/ParentGuard.apk
+            cp app/build/outputs/apk/debug/app-debug.apk build-apks/ParentControlMD.apk
           else
-            find app/build/outputs/apk -name "*.apk" -exec cp {} build-apks/ParentGuard.apk \;
+            find app/build/outputs/apk -name "*.apk" -exec cp {} build-apks/ParentControlMD.apk \;
           fi
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ParentGuard-APK
-          path: build-apks/ParentGuard.apk
+          name: ParentControlMD-APK
+          path: build-apks/ParentControlMD.apk
           retention-days: 30
 
       - name: Publish to GitHub Releases
@@ -72,10 +75,11 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
           tag_name: v1.0.0
-          name: "ParentGuard App Release v1.0.0"
-          body: "Official Android APK Build for ParentGuard App."
-          files: build-apks/ParentGuard.apk
+          name: "parent cantrol md Release v1.0.0"
+          body: "Official Android APK Build for parent cantrol md App."
+          files: build-apks/ParentControlMD.apk
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

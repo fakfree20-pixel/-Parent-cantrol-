@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "ParentGuard"
+rootProject.name = "parent cantrol md"
 
 include(":app")

@@ -1,5 +1,5 @@
 {
-  "name": "ParentGuard",
+  "name": "parent cantrol md",
   "description": "Parental control and screen time monitoring app to manage daily limits, app blocks, bedtime schedules, and healthy digital habits for kids.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

@@ -229,7 +229,7 @@ fun AuthScreen(
             Spacer(modifier = Modifier.width(14.dp))
             Column {
                 Text(
-                    text = "ParentGuard AI",
+                    text = "parent cantrol md",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF1E1E2E)

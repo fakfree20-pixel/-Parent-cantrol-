@@ -249,7 +249,7 @@ fun AccountProfileDialog(
                             color = Color(0xFF1E3A8A)
                         )
                         Text(
-                            text = if (isHindi) "वर्जन: 1.0 (ParentGuard AI Shield)" else "Version: 1.0 (ParentGuard AI Shield)",
+                            text = if (isHindi) "वर्जन: 1.0 (parent cantrol md)" else "Version: 1.0 (parent cantrol md)",
                             fontSize = 10.sp,
                             color = Color(0xFF3B82F6)
                         )

@@ -549,7 +549,7 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
-                                Text("ParentGuard AI", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1E1E2E))
+                                Text("parent cantrol md", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1E1E2E))
                                 Text(if (isHindi) "कस्टम ऐप लोगो एक्टिव • v1.0" else "Custom App Logo Active • v1.0", fontSize = 11.sp, color = Color(0xFF6C5CE7))
                             }
                         }
