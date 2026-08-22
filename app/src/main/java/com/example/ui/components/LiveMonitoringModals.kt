@@ -2316,27 +2316,40 @@ fun DetailedUsageReportDialog(
 @Composable
 fun PairDeviceDialog(
     onDismiss: () -> Unit,
-    isHindi: Boolean
+    isHindi: Boolean,
+    pairingCode: String = "9839247105"
 ) {
-    val pairingCode = "782-901"
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+    var copied by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.QrCode, contentDescription = null, tint = NaturalGreen700, modifier = Modifier.size(28.dp))
+                Icon(
+                    Icons.Default.Smartphone, 
+                    contentDescription = null, 
+                    tint = Color(0xFF6C5CE7), 
+                    modifier = Modifier.size(28.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isHindi) "नया फोन / डिवाइस जोड़ें" else "Pair Child's Device",
+                    text = if (isHindi) "बच्चे का मोबाइल कनेक्ट करें" else "Connect Child's Phone",
                     fontWeight = FontWeight.Bold,
-                    color = NaturalTextPrimary
+                    color = NaturalTextPrimary,
+                    fontSize = 18.sp
                 )
             }
         },
         text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally, 
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
-                    text = if (isHindi) "बच्चे के फोन पर ParentGuard Kids ऐप खोलें और यह 6 अंकों का कोड दर्ज करें:" else "Open ParentGuard Kids on your child's phone and enter this 6-digit code:",
+                    text = if (isHindi) 
+                        "बच्चे के मोबाइल पर ऐप खोलें, 'बच्चा डिवाइस (Child)' चुनें और यह 10-डिजिट कोड दर्ज करें:" 
+                        else "Open app on child's phone, select 'Child Mode', and enter this 10-digit code:",
                     fontSize = 13.sp,
                     color = NaturalTextSecondary,
                     textAlign = TextAlign.Center
@@ -2346,34 +2359,78 @@ fun PairDeviceDialog(
 
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = NaturalGreen100,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, NaturalGreen700)
+                    color = Color(0xFFEDE9FF),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF6C5CE7))
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)
+                    ) {
+                        Text(
+                            text = pairingCode,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 3.sp,
+                            color = Color(0xFF6C5CE7)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(pairingCode))
+                        copied = true
+                    },
+                    shape = RoundedCornerShape(20.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C5CE7))
                 ) {
                     Text(
-                        text = pairingCode,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 4.sp,
-                        color = NaturalGreen900,
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                        text = if (copied) {
+                            if (isHindi) "✓ कोड कॉपी हो गया!" else "✓ Code Copied!"
+                        } else {
+                            if (isHindi) "📋 कोड कॉपी करें" else "📋 Copy Code"
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6C5CE7)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                Text(
-                    text = if (isHindi) "या QR कोड स्कैन करें (स्वचालित पेयरिंग)" else "Or scan QR code with child's camera",
-                    fontSize = 11.sp,
-                    color = NaturalTextTertiary
-                )
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F2F6)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = if (isHindi) "आसान स्टेप्स (3 Steps):" else "Easy Steps (3 Steps):",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2D3436)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isHindi) 
+                                "1. बच्चे के फोन में ऐप खोलें\n2. 'बच्चा डिवाइस (Child)' पर टैप करें\n3. यह 10-अंकों का कोड दर्ज करके 'डिवाइस लिंक करें' दबाएं"
+                                else "1. Open app on child's phone\n2. Tap 'Child Device'\n3. Enter this 10-digit code and tap 'Link Child Device'",
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp,
+                            color = Color(0xFF636E72)
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(containerColor = NaturalGreen700)
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7))
             ) {
-                Text(if (isHindi) "पूर्ण" else "Done")
+                Text(if (isHindi) "ठीक है" else "Done", color = Color.White)
             }
         }
     )
