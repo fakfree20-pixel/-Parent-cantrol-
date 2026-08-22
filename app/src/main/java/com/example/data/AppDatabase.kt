@@ -364,14 +364,14 @@ abstract class AppDatabase : RoomDatabase() {
             )
             dao.insertCallLogs(callLogs)
 
-            // Seed Default Parent Account (ईमेल लॉगिन सिस्टम)
+            // Seed Default Parent Account (ईमेल लॉगिन सिस्टम - logged out by default)
             dao.insertUserAccount(
                 UserAccount(
-                    name = "Musahid Raza",
-                    email = "musahidraza78600@gmail.com",
-                    isLoggedIn = true,
+                    name = "Parent User",
+                    email = "",
+                    isLoggedIn = false,
                     role = "PARENT",
-                    phoneNumber = "+91 98765 43210",
+                    phoneNumber = "",
                     authProvider = "EMAIL"
                 )
             )

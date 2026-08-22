@@ -60,6 +60,8 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -384,124 +386,179 @@ fun DashboardScreen(
         contentPadding = PaddingValues(bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. TOP PURPLE DEVICE HEADER (FlashGet Style)
+        // 1. TOP PURPLE DEVICE HEADER OR PAIRING PROMPT (Show only when connected/added)
         item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF7562EB), Color(0xFF5E4BD8))
+            if (allProfiles.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF7562EB), Color(0xFF5E4BD8))
+                            )
                         )
-                    )
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp)
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clickable { showProfileDropdown = true }
-                            .weight(1f)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // User Avatar
-                        Box(
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.25f)),
-                            contentAlignment = Alignment.Center
+                                .clickable { showProfileDropdown = true }
+                                .weight(1f)
                         ) {
-                            ChildAvatarCircle(
-                                avatarIndex = child.avatarIndex,
-                                name = child.name,
-                                size = 40.dp
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = child.deviceModel.ifEmpty { "Infinix X6823C" },
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 17.sp,
-                                    color = Color.White
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Switch Device",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
+                            // User Avatar
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.25f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                ChildAvatarCircle(
+                                    avatarIndex = child.avatarIndex,
+                                    name = child.name,
+                                    size = 40.dp
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(if (child.isDeviceOnline) Color(0xFF2ED573) else Color.LightGray)
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = if (child.isDeviceOnline) "Online" else "Offline",
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.95f),
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = "🔋 69%",
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.95f),
-                                    fontWeight = FontWeight.Medium
-                                )
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = child.deviceModel.ifEmpty { "Infinix X6823C" },
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 17.sp,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Switch Device",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(2.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(if (child.isDeviceOnline) Color(0xFF2ED573) else Color.LightGray)
+                                    )
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = if (child.isDeviceOnline) "Online" else "Offline",
+                                        fontSize = 12.sp,
+                                        color = Color.White.copy(alpha = 0.95f),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "🔋 69%",
+                                        fontSize = 12.sp,
+                                        color = Color.White.copy(alpha = 0.95f),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
                             }
-                        }
 
-                        // Dropdown
-                        DropdownMenu(
-                            expanded = showProfileDropdown,
-                            onDismissRequest = { showProfileDropdown = false }
-                        ) {
-                            allProfiles.forEach { profile ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            ChildAvatarCircle(avatarIndex = profile.avatarIndex, name = profile.name, size = 30.dp)
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Column {
-                                                Text(profile.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                                Text("${profile.deviceModel} • 🔋 69%", fontSize = 11.sp, color = Color.Gray)
+                            // Dropdown
+                            DropdownMenu(
+                                expanded = showProfileDropdown,
+                                onDismissRequest = { showProfileDropdown = false }
+                            ) {
+                                allProfiles.forEach { profile ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                ChildAvatarCircle(avatarIndex = profile.avatarIndex, name = profile.name, size = 30.dp)
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                Column {
+                                                    Text(profile.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                                    Text("${profile.deviceModel} • 🔋 69%", fontSize = 11.sp, color = Color.Gray)
+                                                }
                                             }
+                                        },
+                                        onClick = {
+                                            onSelectChild(profile.id)
+                                            showProfileDropdown = false
                                         }
-                                    },
-                                    onClick = {
-                                        onSelectChild(profile.id)
-                                        showProfileDropdown = false
-                                    }
-                                )
+                                    )
+                                }
                             }
+                        }
+
+                        // Plus (+) Button to Add / Bind new device
+                        IconButton(
+                            onClick = { showPairDeviceDialog = true },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f))
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Device", tint = Color.White)
                         }
                     }
-
-                    // Plus (+) Button to Add / Bind new device
-                    IconButton(
-                        onClick = { showPairDeviceDialog = true },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f))
+                }
+            } else {
+                // No child device connected prompt with 10-digit pairing code
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE9FF)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Device", tint = Color.White)
+                        Text(
+                            text = if (isHindi) "कोई चाइल्ड डिवाइस कनेक्टेड नहीं है" else "No Child Device Connected",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF281D5E)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (isHindi) "अपने बच्चे के फोन को लिंक करने के लिए 10-डिजिट कनेक्शन कोड शेयर करें:" else "Share this 10-digit connection code with your child's phone:",
+                            fontSize = 13.sp,
+                            color = Color(0xFF6B609E),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.White,
+                            shadowElevation = 2.dp
+                        ) {
+                            Text(
+                                text = "9839247105",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF6C5CE7),
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { showPairDeviceDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (isHindi) "चाइल्ड डिवाइस जोड़ें (Pair Device)" else "Pair Child Device", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }

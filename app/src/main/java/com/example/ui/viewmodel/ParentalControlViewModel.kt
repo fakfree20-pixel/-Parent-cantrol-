@@ -165,6 +165,32 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         _isChildModeActive.value = active
     }
 
+    // 10-Digit Parent Pairing Code
+    val parentPairingCode: String = "9839247105"
+
+    fun linkChildWithPairingCode(code: String, onResult: (Boolean, String) -> Unit) {
+        if (code.length == 10 && code.all { it.isDigit() }) {
+            viewModelScope.launch {
+                // Ensure a child profile exists so child mode works properly
+                if (allChildProfiles.value.isEmpty()) {
+                    val newId = repository.insertChildProfile(ChildProfile(
+                        name = "Linked Child",
+                        age = 11,
+                        avatarIndex = 0,
+                        deviceModel = "Connected Child Phone",
+                        batteryPercent = 90,
+                        isDeviceOnline = true
+                    ))
+                    _selectedChildId.value = newId
+                }
+                _isChildModeActive.value = true
+                onResult(true, "")
+            }
+        } else {
+            onResult(false, "Invalid 10-digit pairing code. Please check and try again.")
+        }
+    }
+
     // Real-time Background Usage Simulation
     private var simulationJob: Job? = null
 

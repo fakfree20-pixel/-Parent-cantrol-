@@ -98,6 +98,7 @@ import com.example.ui.screens.AuthScreen
 import com.example.ui.screens.ChildModeScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.RewardsScreen
+import com.example.ui.screens.RoleSelectionScreen
 import com.example.ui.screens.ScheduleRulesScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.ParentalControlViewModel
@@ -139,14 +140,28 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
     val isHindi = currentLang == "hi"
 
     var isGuestAuthenticated by remember { mutableStateOf(false) }
+    var selectedAppRole by remember { mutableStateOf<String?>(null) }
     var showAccountProfileDialog by remember { mutableStateOf(false) }
     var selectedNavTab by remember { mutableIntStateOf(1) } // Default to Tab 1: Device (FlashGet Hub)
     var showAddChildDialog by remember { mutableStateOf(false) }
     var showChildDropdown by remember { mutableStateOf(false) }
     var showPinDialogForChildMode by remember { mutableStateOf(false) }
 
-    // If no parent user logged in, show AuthScreen (Email ID Login / Sign Up)
-    if (currentUser == null && !isGuestAuthenticated) {
+    // 1. If role is not selected and child mode is not active, show RoleSelectionScreen
+    if (!isChildMode && selectedAppRole == null) {
+        RoleSelectionScreen(
+            isHindi = isHindi,
+            onToggleLanguage = { viewModel.toggleLanguage() },
+            onSelectParentRole = { selectedAppRole = "parent" },
+            onLinkChildDeviceWithCode = { code, onResult ->
+                viewModel.linkChildWithPairingCode(code, onResult)
+            }
+        )
+        return
+    }
+
+    // 2. If Parent role selected but not logged in yet, show AuthScreen
+    if (selectedAppRole == "parent" && currentUser == null && !isGuestAuthenticated) {
         AuthScreen(
             isHindi = isHindi,
             onLogin = { email, pass, onResult ->
