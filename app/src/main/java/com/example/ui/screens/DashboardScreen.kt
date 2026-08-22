@@ -180,6 +180,17 @@ fun DashboardScreen(
     var showBrowserSafetyDialog by remember { mutableStateOf(false) }
     var showHiddenGuideDialog by remember { mutableStateOf(false) }
 
+    // Gemini AI Safety Insights & Remote Camera States
+    var isAiLockApplied by remember { mutableStateOf(false) }
+    var aiAnalysisReport by remember {
+        mutableStateOf(
+            if (isHindi)
+                "✨ AI विश्लेषण: बच्चे ने देर रात YouTube पर 45 मिनट और Free Fire गेमिंग पर 30 मिनट बिताए हैं। AI की सिफारिश है कि रात 9 बजे के बाद गेमिंग ऐप्स ब्लॉक करें और दैनिक स्क्रीन लिमिट 1.5 घंटे निर्धारित करें।"
+            else
+                "✨ AI Analysis: Child spent 45m on YouTube late evening and 30m on gaming. AI recommends restricting gaming apps after 9 PM and setting a 1.5h daily screentime limit."
+        )
+    }
+
     // Active Dialogs Integration
     if (showLivePaintingDialog) {
         LivePaintingDialog(
@@ -602,6 +613,180 @@ fun DashboardScreen(
 
                     // 3D Isometric Bar Chart Illustration
                     Isometric3DChartIllustration()
+                }
+            }
+        }
+
+        // 3. GEMINI AI SAFETY REPORT CARD (✨ Gemini AI Safety Report & Smart Lock Controls)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFAF8FF)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0D0F0)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Header Row with Gradient Sparkle & LIVE Badge
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "✨",
+                                fontSize = 18.sp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isHindi) "Gemini AI सुरक्षा रिपोर्ट" else "Gemini AI Safety Report",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 16.sp,
+                                color = Color(0xFF4A148C)
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFE1BEE7)
+                        ) {
+                            Text(
+                                text = "LIVE",
+                                color = Color(0xFF4A148C),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFFE0D0F0))
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // AI Generated Analysis Text
+                    Text(
+                        text = aiAnalysisReport,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        color = Color(0xFF2D3436),
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Safety Warning Banner
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFFFEBEE),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "⚠️",
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "सुरक्षा चेतावनी: देर रात स्क्रीन उपयोग" else "Safety Warning: Late Night Screentime",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFD32F2F)
+                                )
+                                Text(
+                                    text = if (isHindi) "YouTube और गेमिंग का उपयोग 10 PM के बाद डिटेक्ट हुआ है।" else "High night-time screen & YouTube gaming activity detected.",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFC62828)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Apply AI Lock Settings Button
+                    Button(
+                        onClick = {
+                            isAiLockApplied = true
+                            onInstantLockToggle(true, "AI Smart Screen Restriction Applied", 60)
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isAiLockApplied) Color(0xFF2E7D32) else Color(0xFF6A1B9A)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (isAiLockApplied) {
+                                if (isHindi) "✓ AI सुरक्षा सेटिंग्स लागू हो गई" else "✓ AI Lock Settings Applied"
+                            } else {
+                                if (isHindi) "AI सुरक्षा सेटिंग्स लागू करें (Apply AI Lock)" else "Apply AI Lock Settings"
+                            },
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Quick Remote Camera Snaps Control Row (Front Snap & Back Snap)
+                    Text(
+                        text = if (isHindi) "📷 रिमोट कैमरा त्वरित स्नैप (Remote Camera Snaps)" else "📷 Remote Camera Controls",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4A148C)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { showCameraDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00897B)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = if (isHindi) "📷 फ्रंट स्नैप" else "Front Snap",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Button(
+                            onClick = { showCameraDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00897B)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = if (isHindi) "📷 बैक स्नैप" else "Back Snap",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
         }
