@@ -381,9 +381,24 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
             when (tab) {
                 // Tab 0: Notice (Activity logs, alarms, notifications feed)
                 0 -> ActivityLogScreen(
+                    child = child,
+                    apps = apps,
                     logs = logs,
+                    whatsAppConversations = whatsAppConversations,
+                    smsMessages = smsMessages,
+                    youTubeWatchHistory = youTubeWatchHistory,
+                    appNotifications = appNotifications,
+                    callLogs = callLogs,
                     isHindi = isHindi,
-                    onClearLogs = { viewModel.clearLogs() }
+                    onClearLogs = { viewModel.clearLogs() },
+                    onClearNotifications = { viewModel.clearNotifications() },
+                    onDeleteCallLog = { viewModel.deleteCallLog(it) },
+                    onClearCallLogs = { viewModel.clearCallLogs() },
+                    onClearSmsLogs = { viewModel.clearSmsMessages() },
+                    onClearYouTubeHistory = { viewModel.clearYouTubeWatchHistory() },
+                    onInstantLock = { isLock, reason, duration ->
+                        viewModel.setInstantLock(isLock, reason, duration)
+                    }
                 )
 
                 // Tab 1: Device (FlashGet Control Hub)
