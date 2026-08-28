@@ -12,6 +12,7 @@ import com.example.data.model.SmsMessageItem
 import com.example.data.model.WebFilterRule
 import com.example.data.model.WhatsAppConversation
 import com.example.data.model.YouTubeWatchItem
+import com.example.data.sync.FirebaseCloudSyncManager
 import kotlinx.coroutines.flow.Flow
 
 class ParentalRepository(private val dao: ParentalControlDao) {
@@ -72,16 +73,20 @@ class ParentalRepository(private val dao: ParentalControlDao) {
         val titleHi = if (isLocked) "डिवाइस रिमोट लॉक किया गया" else "डिवाइस अनलॉक किया गया"
         val desc = if (isLocked) "Parent activated remote lock: $reason" else "Parent unlocked the device"
         val descHi = if (isLocked) "माता-पिता ने रिमोट लॉक लगाया: $reason" else "माता-पिता ने डिवाइस अनलॉक किया"
-        dao.insertActivityLog(
-            ActivityLogItem(
-                childId = childId,
-                type = "INSTANT_LOCK",
-                title = title,
-                titleHindi = titleHi,
-                description = desc,
-                descriptionHindi = descHi
-            )
+        val log = ActivityLogItem(
+            childId = childId,
+            type = "INSTANT_LOCK",
+            title = title,
+            titleHindi = titleHi,
+            description = desc,
+            descriptionHindi = descHi
         )
+        dao.insertActivityLog(log)
+        FirebaseCloudSyncManager.sendRemoteCommand(
+            commandType = if (isLocked) "REMOTE_LOCK" else "REMOTE_UNLOCK",
+            payload = mapOf("reason" to reason, "untilTime" to untilTime)
+        )
+        FirebaseCloudSyncManager.uploadActivityLog(log)
     }
 
     suspend fun setBlockAllApps(childId: Long, blockAll: Boolean) {
@@ -90,16 +95,19 @@ class ParentalRepository(private val dao: ParentalControlDao) {
         val titleHi = if (blockAll) "सभी ऐप्स ब्लॉक चालू" else "सभी ऐप्स ब्लॉक बंद"
         val desc = if (blockAll) "Only whitelisted Allowed Apps can be opened" else "Normal app restrictions restored"
         val descHi = if (blockAll) "केवल स्वीकृत ऐप्स ही खोले जा सकेंगे" else "सामान्य ऐप नियम पुनः बहाल"
-        dao.insertActivityLog(
-            ActivityLogItem(
-                childId = childId,
-                type = "APP_BLOCKED",
-                title = title,
-                titleHindi = titleHi,
-                description = desc,
-                descriptionHindi = descHi
-            )
+        val log = ActivityLogItem(
+            childId = childId,
+            type = "APP_BLOCKED",
+            title = title,
+            titleHindi = titleHi,
+            description = desc,
+            descriptionHindi = descHi
         )
+        dao.insertActivityLog(log)
+        FirebaseCloudSyncManager.sendRemoteCommand(
+            commandType = if (blockAll) "BLOCK_ALL_APPS" else "UNBLOCK_ALL_APPS"
+        )
+        FirebaseCloudSyncManager.uploadActivityLog(log)
     }
 
     suspend fun setAntiUninstallProtection(childId: Long, enabled: Boolean, preventSettings: Boolean, preventReset: Boolean) {

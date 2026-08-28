@@ -432,6 +432,7 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
                     onToggleAntiUninstall = { enabled, preventSettings, preventReset ->
                         viewModel.toggleAntiUninstallProtection(enabled, preventSettings, preventReset)
                     },
+                    onSyncCloud = { viewModel.syncNowWithCloud() },
                     onDeleteCallLog = { callLogId ->
                         viewModel.deleteCallLog(callLogId)
                     },

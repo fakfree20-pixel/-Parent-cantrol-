@@ -17,6 +17,7 @@ import com.example.data.model.UserAccount
 import com.example.data.model.WebFilterRule
 import com.example.data.model.WhatsAppConversation
 import com.example.data.model.YouTubeWatchItem
+import com.example.data.sync.FirebaseCloudSyncManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -191,11 +192,51 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
+    // Real-time Cloud Sync
+    private val _isCloudConnected = MutableStateFlow(true)
+    val isCloudConnected: StateFlow<Boolean> = _isCloudConnected.asStateFlow()
+
+    private val _lastCloudSyncTime = MutableStateFlow(System.currentTimeMillis())
+    val lastCloudSyncTime: StateFlow<Long> = _lastCloudSyncTime.asStateFlow()
+
     // Real-time Background Usage Simulation
     private var simulationJob: Job? = null
 
     init {
         startSimulation()
+        initFirebaseSync()
+    }
+
+    private fun initFirebaseSync() {
+        FirebaseCloudSyncManager.startListeningToChildDevice(parentPairingCode) { data ->
+            viewModelScope.launch {
+                _lastCloudSyncTime.value = System.currentTimeMillis()
+                _isCloudConnected.value = true
+                val child = activeChildProfile.value
+                if (child != null) {
+                    val isLocked = data["isLocked"] as? Boolean ?: child.isLocked
+                    val battery = (data["batteryPercent"] as? Number)?.toInt() ?: child.batteryPercent
+                    val isOnline = data["isDeviceOnline"] as? Boolean ?: child.isDeviceOnline
+                    if (isLocked != child.isLocked || battery != child.batteryPercent || isOnline != child.isDeviceOnline) {
+                        repository.updateChildProfile(
+                            child.copy(
+                                isLocked = isLocked,
+                                batteryPercent = battery,
+                                isDeviceOnline = isOnline
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun syncNowWithCloud() {
+        val child = activeChildProfile.value ?: return
+        viewModelScope.launch {
+            _lastCloudSyncTime.value = System.currentTimeMillis()
+            FirebaseCloudSyncManager.syncChildProfileToCloud(child, parentPairingCode)
+        }
     }
 
     private fun startSimulation() {

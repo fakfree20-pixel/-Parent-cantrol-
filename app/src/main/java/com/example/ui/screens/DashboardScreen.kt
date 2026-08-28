@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -56,6 +57,7 @@ import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
@@ -87,6 +89,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -148,12 +151,15 @@ fun DashboardScreen(
     onDeleteGeofence: (Long) -> Unit,
     onClearNotifications: () -> Unit = {},
     onToggleAntiUninstall: (enabled: Boolean, preventSettings: Boolean, preventReset: Boolean) -> Unit = { _, _, _ -> },
+    onSyncCloud: () -> Unit = {},
     onDeleteCallLog: (Long) -> Unit = {},
     onClearCallLogs: () -> Unit = {},
     onClearSmsLogs: () -> Unit = {},
     onClearYouTubeHistory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
     // Dialog States
     var showLockDialog by remember { mutableStateOf(false) }
     var showBonusDialog by remember { mutableStateOf(false) }
@@ -507,15 +513,35 @@ fun DashboardScreen(
                             }
                         }
 
-                        // Plus (+) Button to Add / Bind new device
-                        IconButton(
-                            onClick = { showPairDeviceDialog = true },
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f))
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Device", tint = Color.White)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Cloud Sync Button
+                            IconButton(
+                                onClick = {
+                                    onSyncCloud()
+                                    Toast.makeText(
+                                        context,
+                                        if (isHindi) "☁️ क्लाउड सिंक सफल (Cloud Synced)" else "☁️ Cloud Synced Successfully",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.2f))
+                            ) {
+                                Icon(Icons.Default.Sync, contentDescription = "Sync Cloud", tint = Color.White)
+                            }
+
+                            // Plus (+) Button to Add / Bind new device
+                            IconButton(
+                                onClick = { showPairDeviceDialog = true },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.2f))
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add Device", tint = Color.White)
+                            }
                         }
                     }
                 }
