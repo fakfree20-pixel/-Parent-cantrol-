@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import android.accounts.AccountManager
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -92,141 +97,19 @@ fun AuthScreen(
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var showSupportDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
-    var showGoogleAccountPicker by remember { mutableStateOf(false) }
-    var customGoogleEmail by remember { mutableStateOf("") }
-    var showCustomEmailInput by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
-    if (showGoogleAccountPicker) {
-        Dialog(onDismissRequest = { showGoogleAccountPicker = false }) {
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                modifier = Modifier.fillMaxWidth().padding(16.dp)
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFF4285F4).copy(alpha = 0.1f),
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "G",
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF4285F4)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = if (isHindi) "गूगल से साइन इन करें" else "Sign in with Google",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 17.sp,
-                                color = Color(0xFF1E1E2E)
-                            )
-                            Text(
-                                text = if (isHindi) "अपने फोन का असली जीमेल खाता चुनें" else "Use your real phone's Google Account",
-                                fontSize = 11.sp,
-                                color = Color(0xFF6C7086)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = if (isHindi) "अपने डिवाइस का जीमेल खाता चुनें या दर्ज करें:" else "Select or enter any device Gmail account:",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF4C4F69)
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    OutlinedTextField(
-                        value = customGoogleEmail,
-                        onValueChange = { customGoogleEmail = it },
-                        placeholder = { Text("example@gmail.com", fontSize = 13.sp) },
-                        leadingIcon = {
-                            Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(18.dp))
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF6C5CE7),
-                            unfocusedBorderColor = Color(0xFFDCDFEA)
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Text(
-                        text = if (isHindi) "या तुरंत किसी भी खाते पर टैप करें:" else "Or tap any account to sign in:",
-                        fontSize = 11.sp,
-                        color = Color(0xFF6C7086)
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    val quickAccounts = listOf(
-                        "musahidraza78600@gmail.com",
-                        "personal.account@gmail.com",
-                        "parent.work@gmail.com"
-                    )
-
-                    quickAccounts.forEach { emailItem ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable {
-                                    customGoogleEmail = emailItem
-                                }
-                                .padding(vertical = 6.dp, horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = emailItem,
-                                fontSize = 12.sp,
-                                color = if (customGoogleEmail == emailItem) Color(0xFF6C5CE7) else Color(0xFF2D3436),
-                                fontWeight = if (customGoogleEmail == emailItem) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(onClick = { showGoogleAccountPicker = false }) {
-                            Text(if (isHindi) "रद्द करें" else "Cancel", color = Color(0xFF6C7086))
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = {
-                                val emailClean = customGoogleEmail.trim().ifEmpty { "user.parent@gmail.com" }
-                                val name = emailClean.substringBefore("@").replace(".", " ")
-                                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-                                showGoogleAccountPicker = false
-                                onGoogleLogin(emailClean, name)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(if (isHindi) "साइन इन करें" else "Sign In", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
+    val accountPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val accountName = result.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+            if (accountName != null) {
+                val name = accountName.substringBefore("@").replace(".", " ")
+                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                onGoogleLogin(accountName, name)
             }
         }
     }
@@ -543,7 +426,12 @@ fun AuthScreen(
 
         // Sign In with Google Button (Bordered card button)
         OutlinedButton(
-            onClick = { showGoogleAccountPicker = true },
+            onClick = {
+                val intent = AccountManager.newChooseAccountIntent(
+                    null, null, arrayOf("com.google"), false, null, null, null, null
+                )
+                accountPickerLauncher.launch(intent)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
