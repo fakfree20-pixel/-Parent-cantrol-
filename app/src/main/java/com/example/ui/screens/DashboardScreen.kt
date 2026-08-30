@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -33,7 +37,9 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.HourglassBottom
@@ -52,6 +58,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material.icons.filled.Smartphone
@@ -59,6 +66,7 @@ import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Widgets
@@ -71,6 +79,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -115,6 +124,7 @@ import com.example.ui.components.BrowserSafetyDialog
 import com.example.ui.components.CallHistoryDialog
 import com.example.ui.components.CheckPermissionsDialog
 import com.example.ui.components.ChildAvatarCircle
+import com.example.ui.components.ChildPermissionSetupDialog
 import com.example.ui.components.DetailedUsageReportDialog
 import com.example.ui.components.HiddenChildAppGuideDialog
 import com.example.ui.components.InstantLockDialog
@@ -185,10 +195,19 @@ fun DashboardScreen(
     var showLivePaintingDialog by remember { mutableStateOf(false) }
     var showRemoteAppDialog by remember { mutableStateOf(false) }
     var showCheckPermissionsDialog by remember { mutableStateOf(false) }
+    var showMasterSetupDialog by remember { mutableStateOf(false) }
     var showSocialAppDialog by remember { mutableStateOf(false) }
     var showAlbumsSafetyDialog by remember { mutableStateOf(false) }
     var showBrowserSafetyDialog by remember { mutableStateOf(false) }
     var showHiddenGuideDialog by remember { mutableStateOf(false) }
+
+    // Master All-in-One Permissions Setup Dialog
+    if (showMasterSetupDialog) {
+        ChildPermissionSetupDialog(
+            isHindi = isHindi,
+            onDismiss = { showMasterSetupDialog = false }
+        )
+    }
 
 
 
@@ -518,6 +537,17 @@ fun DashboardScreen(
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Device Setup / Permissions Manager Button
+                            IconButton(
+                                onClick = { showMasterSetupDialog = true },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.2f))
+                            ) {
+                                Icon(Icons.Default.Tune, contentDescription = "Setup & Permissions", tint = Color.White)
+                            }
+
                             // Cloud Sync Button
                             IconButton(
                                 onClick = {
@@ -590,15 +620,90 @@ fun DashboardScreen(
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { showPairDeviceDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
-                            shape = RoundedCornerShape(20.dp)
+                        
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Direct Child APK Download Link Card in Parent Dashboard
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.White.copy(alpha = 0.85f),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isHindi) "चाइल्ड डिवाइस जोड़ें (Pair Device)" else "Pair Child Device", color = Color.White, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isHindi) "🔗 चाइल्ड ऐप डाउनलोड लिंक:" else "🔗 Child APK Download Link:",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF281D5E)
+                                    )
+                                    Text(
+                                        text = "https://kids.flashget.com/child-apk?code=$pairingCode",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF6C5CE7),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                        val clip = ClipData.newPlainText("Child APK Link", "https://kids.flashget.com/child-apk?code=$pairingCode")
+                                        clipboard.setPrimaryClip(clip)
+                                        Toast.makeText(context, if (isHindi) "डाउनलोड लिंक कॉपी हो गया!" else "Download link copied!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy Link", tint = Color(0xFF6C5CE7), modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = { showPairDeviceDialog = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(if (isHindi) "QR कोड व पेयर" else "Pair Device", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    val sendIntent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(
+                                            Intent.EXTRA_TEXT,
+                                            if (isHindi)
+                                                "FlashGet Kids: अपने फोन में चाइल्ड ऐप डाउनलोड करें: https://kids.flashget.com/child-apk?code=$pairingCode\nकनेक्शन कोड दर्ज करें: $pairingCode"
+                                            else
+                                                "Download FlashGet Kids Child APK: https://kids.flashget.com/child-apk?code=$pairingCode\nEnter Pairing Code: $pairingCode"
+                                        )
+                                        type = "text/plain"
+                                    }
+                                    val shareIntent = Intent.createChooser(sendIntent, if (isHindi) "चाइल्ड लिंक शेयर करें" else "Share Child Link")
+                                    context.startActivity(shareIntent)
+                                },
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C5CE7))
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(if (isHindi) "शेयर" else "Share", color = Color(0xFF6C5CE7), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
                         }
                     }
                 }

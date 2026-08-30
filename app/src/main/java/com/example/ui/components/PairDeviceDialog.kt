@@ -94,14 +94,71 @@ fun PairDeviceDialog(
 
                 Text(
                     text = if (isHindi) 
-                        "फ्लैशगेट कीड्स की तरह अपने बच्चे के फोन को जोड़ने के लिए नीचे दिए गए 10-अंकों के कोड या डाउनलोड लिंक का उपयोग करें:" 
-                        else "Like FlashGet Kids, use the connection code or download link below to connect your child's phone:",
+                        "FlashGet Kids की तरह अपने बच्चे के फोन को जोड़ने के लिए नीचे दिए गए QR कोड को स्कैन करें या 10-अंकों का कोड डालें:" 
+                        else "Scan the QR code or enter the 10-digit code on the child's phone to connect:",
                     fontSize = 13.sp,
                     color = NaturalTextSecondary,
                     textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // FlashGet Style QR Code Box
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF6C5CE7).copy(alpha = 0.3f)),
+                    modifier = Modifier.size(160.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        // QR Code Visual Simulation Box
+                        Box(
+                            modifier = Modifier
+                                .size(110.dp)
+                                .background(Color.White)
+                                .border(2.dp, Color(0xFF2D1E5E), RoundedCornerShape(8.dp))
+                                .padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Box(modifier = Modifier.size(24.dp).background(Color(0xFF2D1E5E), RoundedCornerShape(4.dp)).padding(4.dp)) {
+                                        Box(modifier = Modifier.fillMaxSize().background(Color.White, RoundedCornerShape(2.dp)).padding(2.dp)) {
+                                            Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2D1E5E)))
+                                        }
+                                    }
+                                    Box(modifier = Modifier.size(24.dp).background(Color(0xFF2D1E5E), RoundedCornerShape(4.dp)).padding(4.dp)) {
+                                        Box(modifier = Modifier.fillMaxSize().background(Color.White, RoundedCornerShape(2.dp)).padding(2.dp)) {
+                                            Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2D1E5E)))
+                                        }
+                                    }
+                                }
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                                    Text("⚡ FLASHGET ⚡", fontSize = 7.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF6C5CE7))
+                                }
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Box(modifier = Modifier.size(24.dp).background(Color(0xFF2D1E5E), RoundedCornerShape(4.dp)).padding(4.dp)) {
+                                        Box(modifier = Modifier.fillMaxSize().background(Color.White, RoundedCornerShape(2.dp)).padding(2.dp)) {
+                                            Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2D1E5E)))
+                                        }
+                                    }
+                                    Box(modifier = Modifier.size(16.dp).background(Color(0xFF6C5CE7), RoundedCornerShape(3.dp)))
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(if (isHindi) "बच्चे के कैमरे से स्कैन करें" else "Scan with Child's Camera", fontSize = 9.sp, color = Color(0xFF6C5CE7), fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Pairing Code Card
                 Surface(

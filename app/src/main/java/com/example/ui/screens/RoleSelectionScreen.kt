@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.R
+import com.example.ui.components.ChildPermissionSetupDialog
 
 @Composable
 fun RoleSelectionScreen(

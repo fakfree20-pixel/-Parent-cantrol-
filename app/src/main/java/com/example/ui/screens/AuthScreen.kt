@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -95,10 +96,11 @@ fun AuthScreen(
     var customGoogleEmail by remember { mutableStateOf("") }
     var showCustomEmailInput by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
     if (showGoogleAccountPicker) {
-        Dialog(onDismissRequest = { showGoogleAccountPicker = false; showCustomEmailInput = false }) {
+        Dialog(onDismissRequest = { showGoogleAccountPicker = false }) {
             Card(
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -106,146 +108,122 @@ fun AuthScreen(
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "G",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF4285F4)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isHindi) "गूगल खाता चुनें" else "Choose a Google Account",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = Color(0xFF1E1E2E)
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF4285F4).copy(alpha = 0.1f),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "G",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF4285F4)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "गूगल से साइन इन करें" else "Sign in with Google",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp,
+                                color = Color(0xFF1E1E2E)
+                            )
+                            Text(
+                                text = if (isHindi) "अपने फोन का असली जीमेल खाता चुनें" else "Use your real phone's Google Account",
+                                fontSize = 11.sp,
+                                color = Color(0xFF6C7086)
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = if (isHindi) "Parent Control MD जारी रखने के लिए खाता चुनें" else "to continue to Parent Control MD",
-                        fontSize = 13.sp,
-                        color = Color(0xFF6C7086)
-                    )
+
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (!showCustomEmailInput) {
-                        val deviceAccounts = listOf(
-                            Pair("Musahid Raza", "musahidraza78600@gmail.com"),
-                            Pair("Parent Guard Admin", "parent.guard.official@gmail.com"),
-                            Pair("Family Protection Hub", "family.shield.admin@gmail.com")
+                    Text(
+                        text = if (isHindi) "अपने डिवाइस का जीमेल खाता चुनें या दर्ज करें:" else "Select or enter any device Gmail account:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF4C4F69)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = customGoogleEmail,
+                        onValueChange = { customGoogleEmail = it },
+                        placeholder = { Text("example@gmail.com", fontSize = 13.sp) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(18.dp))
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF6C5CE7),
+                            unfocusedBorderColor = Color(0xFFDCDFEA)
                         )
+                    )
 
-                        deviceAccounts.forEach { (accName, accEmail) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        showGoogleAccountPicker = false
-                                        onGoogleLogin(accEmail, accName)
-                                    }
-                                    .padding(vertical = 12.dp, horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFF6C5CE7)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = accName.take(1).uppercase(),
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = accName,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        color = Color(0xFF1E1E2E)
-                                    )
-                                    Text(
-                                        text = accEmail,
-                                        fontSize = 12.sp,
-                                        color = Color(0xFF6C7086)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                        }
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                        Divider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFE4E7F5))
+                    Text(
+                        text = if (isHindi) "या तुरंत किसी भी खाते पर टैप करें:" else "Or tap any account to sign in:",
+                        fontSize = 11.sp,
+                        color = Color(0xFF6C7086)
+                    )
 
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    val quickAccounts = listOf(
+                        "musahidraza78600@gmail.com",
+                        "personal.account@gmail.com",
+                        "parent.work@gmail.com"
+                    )
+
+                    quickAccounts.forEach { emailItem ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { showCustomEmailInput = true }
-                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable {
+                                    customGoogleEmail = emailItem
+                                }
+                                .padding(vertical = 6.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFE4E7F5)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(20.dp))
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isHindi) "+ दूसरा जीमेल खाता जोड़ें" else "+ Add another account",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp,
-                                color = Color(0xFF6C5CE7)
+                                text = emailItem,
+                                fontSize = 12.sp,
+                                color = if (customGoogleEmail == emailItem) Color(0xFF6C5CE7) else Color(0xFF2D3436),
+                                fontWeight = if (customGoogleEmail == emailItem) FontWeight.Bold else FontWeight.Normal
                             )
                         }
-                    } else {
-                        Text(
-                            text = if (isHindi) "अपना जीमेल या ईमेल दर्ज करें" else "Enter your Gmail or email",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1E1E2E)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = customGoogleEmail,
-                            onValueChange = { customGoogleEmail = it },
-                            placeholder = { Text("example@gmail.com") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { showGoogleAccountPicker = false }) {
+                            Text(if (isHindi) "रद्द करें" else "Cancel", color = Color(0xFF6C7086))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                val emailClean = customGoogleEmail.trim().ifEmpty { "user.parent@gmail.com" }
+                                val name = emailClean.substringBefore("@").replace(".", " ")
+                                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                                showGoogleAccountPicker = false
+                                onGoogleLogin(emailClean, name)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
                             shape = RoundedCornerShape(12.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
                         ) {
-                            TextButton(onClick = { showCustomEmailInput = false }) {
-                                Text(if (isHindi) "वापस" else "Back", color = Color(0xFF6C7086))
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Button(
-                                onClick = {
-                                    if (customGoogleEmail.isNotBlank()) {
-                                        val name = customGoogleEmail.substringBefore("@").replace(".", " ")
-                                            .replaceFirstChar { it.uppercase() }
-                                        showGoogleAccountPicker = false
-                                        showCustomEmailInput = false
-                                        onGoogleLogin(customGoogleEmail.trim(), name)
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(if (isHindi) "जारी रखें" else "Continue", color = Color.White)
-                            }
+                            Text(if (isHindi) "साइन इन करें" else "Sign In", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
