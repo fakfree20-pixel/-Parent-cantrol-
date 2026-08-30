@@ -48,6 +48,8 @@ class ParentalRepository(private val dao: ParentalControlDao) {
 
     suspend fun clearYouTubeWatchHistory(childId: Long) = dao.clearYouTubeWatchHistory(childId)
 
+    suspend fun insertActivityLog(log: ActivityLogItem) = dao.insertActivityLog(log)
+
     suspend fun insertChildProfile(profile: ChildProfile): Long {
         val childId = dao.insertChildProfile(profile)
         // Insert standard starter apps for the new child
@@ -283,6 +285,12 @@ class ParentalRepository(private val dao: ParentalControlDao) {
                 )
             )
         }
+        return true
+    }
+
+    suspend fun updateActiveUserPin(newPin: String): Boolean {
+        dao.updateActiveUserPin(newPin)
+        dao.updateAllUserPin(newPin)
         return true
     }
 

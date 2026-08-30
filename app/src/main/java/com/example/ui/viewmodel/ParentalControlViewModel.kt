@@ -138,15 +138,18 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
     val currentUserAccount: StateFlow<UserAccount?> = repository.currentUserAccount
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    // Security & PIN
-    private val _masterPin = MutableStateFlow("1234")
+    // SharedPreferences for persistent state
+    private val prefs = application.getSharedPreferences("parental_control_prefs", android.content.Context.MODE_PRIVATE)
+
+    // Security & PIN (Master 4-digit code for parents)
+    private val _masterPin = MutableStateFlow(prefs.getString("master_security_pin", "1234") ?: "1234")
     val masterPin: StateFlow<String> = _masterPin.asStateFlow()
 
     private val _isParentPinUnlocked = MutableStateFlow(true)
     val isParentPinUnlocked: StateFlow<Boolean> = _isParentPinUnlocked.asStateFlow()
 
     fun verifyPin(pin: String): Boolean {
-        val success = pin == _masterPin.value
+        val success = pin.trim() == _masterPin.value.trim()
         if (success) {
             _isParentPinUnlocked.value = true
         }
@@ -154,30 +157,57 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
     }
 
     fun changePin(newPin: String) {
-        if (newPin.length == 4 && newPin.all { it.isDigit() }) {
-            _masterPin.value = newPin
-            updateAntiUninstallPin(newPin)
+        val trimmed = newPin.trim()
+        if (trimmed.length == 4 && trimmed.all { it.isDigit() }) {
+            _masterPin.value = trimmed
+            prefs.edit().putString("master_security_pin", trimmed).apply()
+            viewModelScope.launch {
+                repository.updateActiveUserPin(trimmed)
+                val activeChild = _selectedChildId.value
+                if (activeChild != null) {
+                    repository.insertActivityLog(
+                        com.example.data.model.ActivityLogItem(
+                            childId = activeChild,
+                            type = "SECURITY_PIN",
+                            title = "Security PIN Updated",
+                            titleHindi = "मास्टर सुरक्षा पिन अपडेट",
+                            description = "Master Security PIN changed successfully",
+                            descriptionHindi = "मास्टर सुरक्षा कोड सफलतापूर्वक बदला गया"
+                        )
+                    )
+                }
+            }
         }
     }
 
     // App Mode: false = Parent Mode, true = Child Device Mode
-    private val _isChildModeActive = MutableStateFlow(false)
+    private val _isChildModeActive = MutableStateFlow(prefs.getBoolean("is_child_mode_active", false))
     val isChildModeActive: StateFlow<Boolean> = _isChildModeActive.asStateFlow()
+
+    private val _appRole = MutableStateFlow<String?>(prefs.getString("selected_app_role", null))
+    val appRole: StateFlow<String?> = _appRole.asStateFlow()
+
+    fun setAppRole(role: String?) {
+        _appRole.value = role
+        prefs.edit().putString("selected_app_role", role).apply()
+    }
 
     fun enterChildMode() {
         _isChildModeActive.value = true
+        prefs.edit().putBoolean("is_child_mode_active", true).apply()
     }
 
     fun exitChildMode() {
         _isChildModeActive.value = false
+        prefs.edit().putBoolean("is_child_mode_active", false).apply()
     }
 
     fun setChildMode(active: Boolean) {
         _isChildModeActive.value = active
+        prefs.edit().putBoolean("is_child_mode_active", active).apply()
     }
 
     // Persistent Unique 10-Digit Parent Pairing Code (Generated uniquely per installation)
-    private val prefs = application.getSharedPreferences("parental_control_prefs", android.content.Context.MODE_PRIVATE)
     
     private val _parentPairingCode = MutableStateFlow(
         prefs.getString("unique_pairing_code", null) ?: run {
@@ -195,11 +225,19 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         return newCode
     }
 
+    private val _childPairingCode = MutableStateFlow<String?>(prefs.getString("child_pairing_code", null))
+    val childPairingCode: StateFlow<String?> = _childPairingCode.asStateFlow()
+
     fun linkChildWithPairingCode(code: String, onResult: (Boolean, String) -> Unit) {
         if (code.length == 10 && code.all { it.isDigit() }) {
             viewModelScope.launch {
+                // Save the pairing code on the child device
+                _childPairingCode.value = code
+                prefs.edit().putString("child_pairing_code", code).apply()
+
                 // Ensure a child profile exists so child mode works properly
-                if (allChildProfiles.value.isEmpty()) {
+                var child = allChildProfiles.value.firstOrNull()
+                if (child == null) {
                     val newId = repository.insertChildProfile(ChildProfile(
                         name = "Linked Child",
                         age = 11,
@@ -209,8 +247,25 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                         isDeviceOnline = true
                     ))
                     _selectedChildId.value = newId
+                    child = ChildProfile(
+                        id = newId,
+                        name = "Linked Child",
+                        age = 11,
+                        avatarIndex = 0,
+                        deviceModel = "Connected Child Phone",
+                        batteryPercent = 90,
+                        isDeviceOnline = true
+                    )
                 }
+                
+                // SYNC TO CLOUD: Tell the Parent device that the child has connected!
+                if (child != null) {
+                    FirebaseCloudSyncManager.syncChildProfileToCloud(child, code)
+                }
+
                 _isChildModeActive.value = true
+                prefs.edit().putBoolean("is_child_mode_active", true).apply()
+                initFirebaseSync() // Re-initialize listener with the new code
                 onResult(true, "")
             }
         } else {
@@ -234,23 +289,43 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
     }
 
     private fun initFirebaseSync() {
-        FirebaseCloudSyncManager.startListeningToChildDevice(_parentPairingCode.value) { data ->
-            viewModelScope.launch {
-                _lastCloudSyncTime.value = System.currentTimeMillis()
-                _isCloudConnected.value = true
-                val child = activeChildProfile.value
-                if (child != null) {
-                    val isLocked = data["isLocked"] as? Boolean ?: child.isLocked
-                    val battery = (data["batteryPercent"] as? Number)?.toInt() ?: child.batteryPercent
-                    val isOnline = data["isDeviceOnline"] as? Boolean ?: child.isDeviceOnline
-                    if (isLocked != child.isLocked || battery != child.batteryPercent || isOnline != child.isDeviceOnline) {
-                        repository.updateChildProfile(
-                            child.copy(
-                                isLocked = isLocked,
-                                batteryPercent = battery,
-                                isDeviceOnline = isOnline
+        val codeToListen = if (_isChildModeActive.value) _childPairingCode.value else _parentPairingCode.value
+        if (codeToListen != null) {
+            FirebaseCloudSyncManager.startListeningToChildDevice(codeToListen) { data ->
+                viewModelScope.launch {
+                    _lastCloudSyncTime.value = System.currentTimeMillis()
+                    _isCloudConnected.value = true
+                    val child = activeChildProfile.value
+                    if (child != null) {
+                        val isLocked = data["isLocked"] as? Boolean ?: child.isLocked
+                        val battery = (data["batteryPercent"] as? Number)?.toInt() ?: child.batteryPercent
+                        val isOnline = data["isDeviceOnline"] as? Boolean ?: child.isDeviceOnline
+                        if (isLocked != child.isLocked || battery != child.batteryPercent || isOnline != child.isDeviceOnline) {
+                            repository.updateChildProfile(
+                                child.copy(
+                                    isLocked = isLocked,
+                                    batteryPercent = battery,
+                                    isDeviceOnline = isOnline
+                                )
                             )
-                        )
+                        }
+                    } else if (!_isChildModeActive.value) {
+                        // Parent device: automatically create a local profile if child connected from cloud
+                        val childName = data["childName"] as? String ?: "Linked Child"
+                        val deviceName = data["deviceName"] as? String ?: "Connected Phone"
+                        val battery = (data["batteryPercent"] as? Number)?.toInt() ?: 100
+                        val isLocked = data["isLocked"] as? Boolean ?: false
+                        
+                        val newId = repository.insertChildProfile(ChildProfile(
+                            name = childName,
+                            age = 10,
+                            avatarIndex = 0,
+                            deviceModel = deviceName,
+                            batteryPercent = battery,
+                            isDeviceOnline = true,
+                            isLocked = isLocked
+                        ))
+                        _selectedChildId.value = newId
                     }
                 }
             }
@@ -261,7 +336,10 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         val child = activeChildProfile.value ?: return
         viewModelScope.launch {
             _lastCloudSyncTime.value = System.currentTimeMillis()
-            FirebaseCloudSyncManager.syncChildProfileToCloud(child, _parentPairingCode.value)
+            val codeToUse = if (_isChildModeActive.value) _childPairingCode.value else _parentPairingCode.value
+            if (codeToUse != null) {
+                FirebaseCloudSyncManager.syncChildProfileToCloud(child, codeToUse)
+            }
         }
     }
 
@@ -287,6 +365,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         val childId = _selectedChildId.value ?: return
         viewModelScope.launch {
             repository.setInstantLock(childId, isLocked, reason, durationMinutes)
+            syncNowWithCloud()
         }
     }
 
@@ -294,6 +373,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         val childId = _selectedChildId.value ?: return
         viewModelScope.launch {
             repository.setBlockAllApps(childId, blockAll)
+            syncNowWithCloud()
         }
     }
 
@@ -301,6 +381,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         val childId = _selectedChildId.value ?: return
         viewModelScope.launch {
             repository.addBonusMinutes(childId, minutes, reason)
+            syncNowWithCloud()
         }
     }
 
@@ -527,6 +608,9 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         viewModelScope.launch {
             val success = repository.signUpWithEmail(name, email, pass, phone, antiUninstallPin)
             if (success) {
+                val chosenPin = antiUninstallPin.ifBlank { "1234" }
+                _masterPin.value = chosenPin
+                prefs.edit().putString("master_security_pin", chosenPin).apply()
                 regeneratePairingCode()
                 onResult(true, "खाता सफलतापूर्वक बन गया! (Account created successfully)")
             } else {
@@ -536,12 +620,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
     }
 
     fun updateAntiUninstallPin(newPin: String) {
-        viewModelScope.launch {
-            val user = currentUserAccount.value
-            if (user != null) {
-                repository.signUpWithEmail(user.name, user.email, user.passwordHash, user.phoneNumber, newPin)
-            }
-        }
+        changePin(newPin)
     }
 
     fun loginWithGoogle(email: String, name: String) {

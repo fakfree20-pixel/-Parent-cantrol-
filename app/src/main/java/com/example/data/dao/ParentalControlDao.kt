@@ -175,6 +175,12 @@ interface ParentalControlDao {
     @Update
     suspend fun updateUserAccount(user: UserAccount)
 
+    @Query("UPDATE user_accounts SET antiUninstallPin = :newPin WHERE isLoggedIn = 1")
+    suspend fun updateActiveUserPin(newPin: String)
+
+    @Query("UPDATE user_accounts SET antiUninstallPin = :newPin")
+    suspend fun updateAllUserPin(newPin: String)
+
     @Query("UPDATE user_accounts SET isLoggedIn = 0")
     suspend fun logOutAllUsers()
 

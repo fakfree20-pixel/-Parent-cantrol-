@@ -309,12 +309,12 @@ fun ChildModeScreen(
                     Text(
                         text = if (isHindi) {
                             if (!isAppHiddenByParent)
-                                "यह विकल्प चालू करने पर बच्चे के फोन की होम स्क्रीन और ऐप ड्रॉअर से 'FlashGet Kids' का आइकॉन गायब हो जाएगा।\n\nऐप को बाद में खोलने के लिए फोन डायलर में #*#*1234#*#* डायल करें या पैरेंट ऐप से एक्सेस करें।"
+                                "यह विकल्प चालू करने पर बच्चे के फोन की होम स्क्रीन और ऐप ड्रॉअर से ऐप का आइकॉन गायब हो जाएगा।\n\nऐप को बाद में खोलने के लिए पैरेंट ऐप से एक्सेस करें।"
                             else
                                 "ऐप आइकॉन वापस बच्चे के फोन की होम स्क्रीन पर दिखाई देने लगेगा।"
                         } else {
                             if (!isAppHiddenByParent)
-                                "Once enabled, the app icon will disappear from your child's home screen & app drawer.\n\nTo reopen the app anytime, dial #*#*1234#*#* in the phone dialer or manage from Parent Dashboard."
+                                "Once enabled, the app icon will disappear from your child's home screen & app drawer.\n\nTo reopen the app anytime, manage from Parent Dashboard."
                             else
                                 "The app icon will reappear on the child's home screen."
                         },
@@ -328,23 +328,21 @@ fun ChildModeScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.padding(10.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("📞", fontSize = 16.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
+                                TextButton(
+                                    onClick = { showHideAppGuideDialog = true },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(Icons.Default.HelpOutline, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = if (isHindi) "सीक्रेट डायलर कोड:" else "Secret Dialer Code:",
-                                        fontSize = 11.sp,
+                                        text = if (isHindi) "छिपा ऐप कैसे खोलें?" else "How to Open Guide",
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF6C5CE7)
-                                    )
-                                    Text(
-                                        text = "#*#*1234#*#*",
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = Color(0xFF2D1E5E)
                                     )
                                 }
                             }
@@ -775,28 +773,9 @@ fun ChildModeScreen(
                     // Secret Dial Guide and How to open button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFFEDE9FF)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("📞", fontSize = 12.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "#*#*1234#*#*",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF6C5CE7)
-                                )
-                            }
-                        }
-
                         TextButton(
                             onClick = { showHideAppGuideDialog = true },
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)

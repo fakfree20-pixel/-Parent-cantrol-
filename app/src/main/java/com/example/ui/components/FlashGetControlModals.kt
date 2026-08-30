@@ -1093,9 +1093,9 @@ fun HiddenChildAppGuideDialog(
                     item {
                         GuideStepCard(
                             stepNumber = "3",
-                            title = if (isHindi) "पैरेंट सुरक्षा पिन" else "Parent Master PIN",
-                            description = if (isHindi) "सेटिंग्स बदलने या ऐप बंद करने के लिए डिफ़ॉल्ट पिन:" else "Master security PIN to exit Child Lock mode:",
-                            codeText = "1234"
+                            title = if (isHindi) "पैरेंट डैशबोर्ड" else "Parent Dashboard",
+                            description = if (isHindi) "ऐप को पैरेंट फोन से मैनेज करें" else "Manage app from parent device",
+                            codeText = "Parent"
                         )
                     }
                 }

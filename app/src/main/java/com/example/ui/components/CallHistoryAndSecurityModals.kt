@@ -59,6 +59,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -554,8 +555,10 @@ private fun CallLogCard(
 fun AntiUninstallProtectionDialog(
     child: ChildProfile,
     isHindi: Boolean,
+    masterPin: String = "1234",
     onToggleAntiUninstall: (enabled: Boolean, preventSettings: Boolean, preventReset: Boolean) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onOpenPinManager: (() -> Unit)? = null
 ) {
     var antiUninstall by remember { mutableStateOf(child.antiUninstallEnabled) }
     var preventSettings by remember { mutableStateOf(child.preventSettingsAccess) }
@@ -727,30 +730,60 @@ fun AntiUninstallProtectionDialog(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // PIN Reminder Note
+                // Master PIN Info & Change Button
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = EarthAmber100.copy(alpha = 0.5f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Key, contentDescription = null, tint = EarthAmber600, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isHindi) "डिफ़ॉल्ट पैरेंट मास्टर पिन: 1234 (इसे केवल आप जानते हैं)" else "Default Parent Master PIN: 1234",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = NaturalTextPrimary
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Default.Key, contentDescription = null, tint = EarthAmber600, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "मास्टर सिक्योरिटी पिन (Security Code):" else "Master Security PIN:",
+                                    fontSize = 11.sp,
+                                    color = NaturalTextSecondary
+                                )
+                                Text(
+                                    text = masterPin,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = NaturalGreen900,
+                                    letterSpacing = 2.sp
+                                )
+                            }
+                        }
+
+                        if (onOpenPinManager != null) {
+                            TextButton(
+                                onClick = {
+                                    onDismiss()
+                                    onOpenPinManager()
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = if (isHindi) "पिन बदलें" else "Change",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF6C5CE7)
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Button(
                     onClick = {

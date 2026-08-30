@@ -149,18 +149,41 @@ import com.example.ui.theme.Terracotta700
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
-// 1. REMOTE CAMERA LIVE STREAM DIALOG
+// 1. REMOTE CAMERA LIVE STREAM DIALOG (बच्चे का रिमोट कैमरा लाइव)
 @Composable
 fun RemoteCameraDialog(
     child: ChildProfile,
     isHindi: Boolean,
     onDismiss: () -> Unit
 ) {
-    var isBackCamera by remember { mutableStateOf(false) }
+    var isBackCamera by remember { mutableStateOf(true) } // Default to rear camera showing child's room/surroundings
     var isFlashOn by remember { mutableStateOf(false) }
-    var isAudioMuted by remember { mutableStateOf(false) }
+    var isAudioListening by remember { mutableStateOf(true) }
+    var isNightVision by remember { mutableStateOf(false) }
+    var isRecordingVideo by remember { mutableStateOf(false) }
+    var recordTimerSeconds by remember { mutableIntStateOf(0) }
     var snapshotTaken by remember { mutableStateOf(false) }
-    var streamQuality by remember { mutableStateOf("720P HD • 30 FPS") }
+    var streamQuality by remember { mutableStateOf("1080P FHD • 60 FPS") }
+    var showQualityMenu by remember { mutableStateOf(false) }
+    var ambientDb by remember { mutableIntStateOf(34) }
+
+    // Live ambient dB and recording timer simulation
+    LaunchedEffect(isRecordingVideo) {
+        if (isRecordingVideo) {
+            recordTimerSeconds = 0
+            while (isRecordingVideo) {
+                delay(1000)
+                recordTimerSeconds++
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1200)
+            ambientDb = Random.nextInt(28, 48)
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -169,20 +192,30 @@ fun RemoteCameraDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(Color(0xFF0A0E17))
         ) {
-            // Simulated Live Camera View
+            // Simulated Live Camera View from Child's Phone
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                if (isBackCamera) Color(0xFF1E2D24) else Color(0xFF282F3A),
-                                Color(0xFF0F1412),
-                                Color.Black
+                        if (isNightVision) {
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0xFF0F381E),
+                                    Color(0xFF071F10),
+                                    Color(0xFF020B05)
+                                )
                             )
-                        )
+                        } else {
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    if (isBackCamera) Color(0xFF1B2838) else Color(0xFF2A2035),
+                                    Color(0xFF111722),
+                                    Color(0xFF090D14)
+                                )
+                            )
+                        }
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -192,61 +225,177 @@ fun RemoteCameraDialog(
                     val cy = size.height / 2
 
                     // Grid lines
-                    drawLine(Color.White.copy(alpha = 0.1f), Offset(0f, cy), Offset(size.width, cy), strokeWidth = 1f)
-                    drawLine(Color.White.copy(alpha = 0.1f), Offset(cx, 0f), Offset(cx, size.height), strokeWidth = 1f)
+                    val gridColor = if (isNightVision) Color(0xFF00FF66).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.08f)
+                    drawLine(gridColor, Offset(0f, cy), Offset(size.width, cy), strokeWidth = 1f)
+                    drawLine(gridColor, Offset(cx, 0f), Offset(cx, size.height), strokeWidth = 1f)
 
-                    // Target corners
-                    val boxSize = 220.dp.toPx()
-                    val cornerLen = 24.dp.toPx()
-                    val left = cx - boxSize / 2
-                    val right = cx + boxSize / 2
-                    val top = cy - boxSize / 2
-                    val bottom = cy + boxSize / 2
+                    // Viewfinder Corners
+                    val boxW = size.width * 0.78f
+                    val boxH = size.height * 0.52f
+                    val left = cx - boxW / 2
+                    val right = cx + boxW / 2
+                    val top = cy - boxH / 2
+                    val bottom = cy + boxH / 2
+                    val cornerLen = 28.dp.toPx()
+                    val strokeColor = if (isNightVision) Color(0xFF00FF66) else if (isFlashOn) Color(0xFFFFD54F) else Color(0xFF6C5CE7)
 
-                    drawArc(
-                        color = if (isFlashOn) Color(0xFFFFD54F) else Color(0xFF4CAF50),
-                        startAngle = 0f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        topLeft = Offset(left, top),
-                        size = androidx.compose.ui.geometry.Size(boxSize, boxSize),
+                    // Top Left Corner
+                    drawLine(strokeColor, Offset(left, top), Offset(left + cornerLen, top), strokeWidth = 3f)
+                    drawLine(strokeColor, Offset(left, top), Offset(left, top + cornerLen), strokeWidth = 3f)
+
+                    // Top Right Corner
+                    drawLine(strokeColor, Offset(right, top), Offset(right - cornerLen, top), strokeWidth = 3f)
+                    drawLine(strokeColor, Offset(right, top), Offset(right, top + cornerLen), strokeWidth = 3f)
+
+                    // Bottom Left Corner
+                    drawLine(strokeColor, Offset(left, bottom), Offset(left + cornerLen, bottom), strokeWidth = 3f)
+                    drawLine(strokeColor, Offset(left, bottom), Offset(left, bottom - cornerLen), strokeWidth = 3f)
+
+                    // Bottom Right Corner
+                    drawLine(strokeColor, Offset(right, bottom), Offset(right - cornerLen, bottom), strokeWidth = 3f)
+                    drawLine(strokeColor, Offset(right, bottom), Offset(right, bottom - cornerLen), strokeWidth = 3f)
+
+                    // Center Focus Target
+                    val focusRadius = 32.dp.toPx()
+                    drawCircle(
+                        color = strokeColor.copy(alpha = 0.4f),
+                        radius = focusRadius,
+                        center = Offset(cx, cy),
                         style = Stroke(width = 1.5f)
                     )
                 }
 
+                // Center Live Content Rendering (Child Room or Child Study Desk)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PhotoCamera,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.6f),
-                        modifier = Modifier.size(54.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isNightVision) Color(0xFF00FF66).copy(alpha = 0.15f)
+                                else Color.White.copy(alpha = 0.08f)
+                            )
+                            .border(
+                                1.5.dp,
+                                if (isNightVision) Color(0xFF00FF66) else Color(0xFF6C5CE7).copy(alpha = 0.5f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isBackCamera) Icons.Default.PhotoCamera else Icons.Default.Cameraswitch,
+                            contentDescription = null,
+                            tint = if (isNightVision) Color(0xFF00FF66) else Color.White,
+                            modifier = Modifier.size(44.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
                     Text(
                         text = if (isBackCamera) {
-                            if (isHindi) "${child.name} का रियर कैमरा लाइव" else "${child.name}'s Rear Camera Stream"
+                            if (isHindi) "${child.name} का बैक कैमरा (कमरा व परिवेश)" else "${child.name}'s Back Camera (Room View)"
                         } else {
-                            if (isHindi) "${child.name} का फ्रंट कैमरा लाइव" else "${child.name}'s Front Camera Stream"
+                            if (isHindi) "${child.name} का फ्रंट कैमरा (सेल्फी / अध्ययन दृश्य)" else "${child.name}'s Front Camera (Study / Face View)"
                         },
-                        color = Color.White,
+                        color = if (isNightVision) Color(0xFF00FF66) else Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 17.sp,
+                        textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = if (isHindi) "डिवाइस: ${child.deviceModel} (लाइव कनेक्टेड)" else "Device: ${child.deviceModel} (Live Connected)",
-                        color = Color(0xFFA5D6A7),
-                        fontSize = 12.sp
-                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.Black.copy(alpha = 0.6f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Smartphone, contentDescription = null, tint = Color(0xFF00CEC9), modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isHindi) "बच्चे का फोन: ${child.deviceModel} (लाइव स्ट्रीम)" else "Child Device: ${child.deviceModel} (Live Stream)",
+                                color = Color(0xFF00CEC9),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Audio Level & Night mode indicator
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isAudioListening) Color(0xFF0984E3).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Mic,
+                                    contentDescription = null,
+                                    tint = if (isAudioListening) Color(0xFF74B9FF) else Color.Gray,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isAudioListening) "Audio: $ambientDb dB" else "Audio Muted",
+                                    color = if (isAudioListening) Color(0xFF74B9FF) else Color.Gray,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        if (isNightVision) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFF00FF66).copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = "🌙 NIGHT VISION ON",
+                                    color = Color(0xFF00FF66),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        if (isFlashOn) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFFFD54F).copy(alpha = 0.25f)
+                            ) {
+                                Text(
+                                    text = "⚡ TORCH ON",
+                                    color = Color(0xFFFFD54F),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
 
                     if (snapshotTaken) {
                         Spacer(modifier = Modifier.height(14.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = NaturalGreen700
+                            color = Color(0xFF00B894)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
@@ -255,7 +404,7 @@ fun RemoteCameraDialog(
                                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (isHindi) "स्क्रीनशॉट सुरक्षित सहेजा गया!" else "Snapshot Saved Successfully!",
+                                    text = if (isHindi) "फोटो सफलतापूर्वक सहेजी गई!" else "Photo Captured & Saved to Gallery!",
                                     color = Color.White,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
@@ -266,78 +415,259 @@ fun RemoteCameraDialog(
                 }
             }
 
-            // Top Status Bar
-            Row(
+            // Top Status Bar Overlay
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 40.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .align(Alignment.TopCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Black.copy(alpha = 0.9f), Color.Black.copy(alpha = 0.4f), Color.Transparent)
+                        )
+                    )
+                    .padding(top = 36.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // LIVE Badge
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color(0xFFFF4757))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text("CHILD CAM LIVE", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Quality Badge
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color.White.copy(alpha = 0.15f),
+                            modifier = Modifier.clickable { showQualityMenu = !showQualityMenu }
+                        ) {
+                            Text(
+                                text = streamQuality,
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color.Red)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("LIVE", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(streamQuality, color = Color.LightGray, fontSize = 10.sp)
+                            .background(Color.White.copy(alpha = 0.15f))
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
                 }
 
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.6f))
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Telemetry sub-bar
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                    Text(
+                        text = if (isHindi) "रिमोट स्ट्रीम: ${child.name} का फोन" else "Streaming from ${child.name}'s Device",
+                        color = Color.LightGray,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        text = "📶 5G • 🔋 69%",
+                        color = Color(0xFF00CEC9),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                if (isRecordingVideo) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Red.copy(alpha = 0.8f))
+                            .padding(horizontal = 10.dp, vertical = 3.dp)
+                    ) {
+                        Box(modifier = Modifier.size(6.dp).background(Color.White, CircleShape))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "REC: %02d:%02d".format(recordTimerSeconds / 60, recordTimerSeconds % 60),
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
-            // Bottom Camera Controls
+            // Bottom Camera Controls Panel
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .background(
-                        Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f), Color.Black))
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f), Color.Black)
+                        )
                     )
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                    .padding(horizontal = 18.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Quick toggles row (Audio, Torch, Night Vision)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Flash Toggle
-                    IconButton(
-                        onClick = { isFlashOn = !isFlashOn },
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(CircleShape)
-                            .background(if (isFlashOn) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.15f))
-                    ) {
-                        Icon(
-                            Icons.Default.FlashOn,
-                            contentDescription = "Flashlight",
-                            tint = if (isFlashOn) Color.Black else Color.White
+                    // Audio Listen Toggle
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(
+                            onClick = { isAudioListening = !isAudioListening },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(if (isAudioListening) Color(0xFF0984E3) else Color.White.copy(alpha = 0.15f))
+                        ) {
+                            Icon(
+                                imageVector = if (isAudioListening) Icons.Default.VolumeUp else Icons.Default.VolumeMute,
+                                contentDescription = "Audio Listen",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = if (isHindi) "ऑडियो" else "Audio",
+                            color = if (isAudioListening) Color(0xFF74B9FF) else Color.Gray,
+                            fontSize = 10.sp
                         )
                     }
 
-                    // Snapshot Shutter Button
+                    // Torch / Flashlight Toggle
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(
+                            onClick = { isFlashOn = !isFlashOn },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(if (isFlashOn) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.15f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FlashOn,
+                                contentDescription = "Flashlight",
+                                tint = if (isFlashOn) Color.Black else Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = if (isHindi) "टॉर्च" else "Torch",
+                            color = if (isFlashOn) Color(0xFFFFD54F) else Color.Gray,
+                            fontSize = 10.sp
+                        )
+                    }
+
+                    // Night Vision IR Toggle
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(
+                            onClick = { isNightVision = !isNightVision },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(if (isNightVision) Color(0xFF00FF66) else Color.White.copy(alpha = 0.15f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Brightness6,
+                                contentDescription = "Night Vision",
+                                tint = if (isNightVision) Color.Black else Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = if (isHindi) "नाइट विज़न" else "Night Vision",
+                            color = if (isNightVision) Color(0xFF00FF66) else Color.Gray,
+                            fontSize = 10.sp
+                        )
+                    }
+
+                    // Video Recording Toggle
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(
+                            onClick = { isRecordingVideo = !isRecordingVideo },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(if (isRecordingVideo) Color(0xFFFF4757) else Color.White.copy(alpha = 0.15f))
+                        ) {
+                            Icon(
+                                imageVector = if (isRecordingVideo) Icons.Default.Stop else Icons.Default.FiberManualRecord,
+                                contentDescription = "Record Video",
+                                tint = if (isRecordingVideo) Color.White else Color(0xFFFF4757),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = if (isRecordingVideo) (if (isHindi) "रोकें" else "Stop") else (if (isHindi) "रिकॉर्ड" else "Record"),
+                            color = if (isRecordingVideo) Color(0xFFFF4757) else Color.Gray,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // Shutter & Flip Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Switch Camera Mode (Front <-> Rear)
+                    OutlinedButton(
+                        onClick = { isBackCamera = !isBackCamera },
+                        shape = RoundedCornerShape(16.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Icon(Icons.Default.Cameraswitch, contentDescription = "Flip Camera", tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isBackCamera) (if (isHindi) "फ्रंट कैमरा" else "Front Cam") else (if (isHindi) "बैक कैमरा" else "Rear Cam"),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    // Main Snapshot Shutter Button
                     Box(
                         modifier = Modifier
-                            .size(72.dp)
+                            .size(70.dp)
                             .clip(CircleShape)
                             .border(4.dp, Color.White, CircleShape)
                             .background(Color.White.copy(alpha = 0.2f))
@@ -346,30 +676,46 @@ fun RemoteCameraDialog(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(54.dp)
+                                .size(52.dp)
                                 .clip(CircleShape)
                                 .background(Color.White)
                         )
                     }
 
-                    // Flip Camera (Front / Rear)
-                    IconButton(
-                        onClick = { isBackCamera = !isBackCamera },
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.15f))
+                    // Resolution Quality Dropdown Button
+                    OutlinedButton(
+                        onClick = {
+                            streamQuality = when (streamQuality) {
+                                "1080P FHD • 60 FPS" -> "720P HD • 30 FPS"
+                                "720P HD • 30 FPS" -> "480P Saver • 24 FPS"
+                                else -> "1080P FHD • 60 FPS"
+                            }
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
                     ) {
-                        Icon(Icons.Default.Cameraswitch, contentDescription = "Switch Camera", tint = Color.White)
+                        Icon(Icons.Default.Refresh, contentDescription = "Quality", tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = streamQuality.substringBefore(" •"),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = if (isHindi) "टैप करके फ्रंट/रियर कैमरा बदलें या स्नैपशॉट लें" else "Tap shutter for photo capture or flip front/rear camera",
-                    color = Color.LightGray,
-                    fontSize = 11.sp
+                    text = if (isHindi)
+                        "⚡ बच्चे के फोन से लाइव प्रसारण • फ्रंट/बैक कैमरा बदलें या स्नैपशॉट लें"
+                        else "⚡ Live stream from child's camera • Flip Front/Back or capture snapshot",
+                    color = Color.Gray,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center
                 )
             }
         }

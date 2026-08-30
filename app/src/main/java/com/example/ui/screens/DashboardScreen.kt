@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.HourglassBottom
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -68,6 +69,7 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Button
@@ -135,9 +137,9 @@ import com.example.ui.components.PairDeviceDialog
 import com.example.ui.components.RemoteAppLauncherDialog
 import com.example.ui.components.RemoteCameraDialog
 import com.example.ui.components.ScreenMirroringDialog
+import com.example.ui.components.SecurityPinManagementDialog
 import com.example.ui.components.SmsTrackingDialog
 import com.example.ui.components.SocialAppDetectionDialog
-import com.example.ui.components.SubscriptionUpgradeDialog
 import com.example.ui.components.WhatsAppChatTrackerDialog
 import com.example.ui.components.YouTubeMonitoringDialog
 
@@ -169,6 +171,8 @@ fun DashboardScreen(
     onClearYouTubeHistory: () -> Unit = {},
     pairingCode: String = "9839247105",
     onRegeneratePairingCode: () -> Unit = {},
+    masterPin: String = "1234",
+    onChangePin: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -189,7 +193,7 @@ fun DashboardScreen(
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showCallHistoryDialog by remember { mutableStateOf(false) }
     var showAntiUninstallDialog by remember { mutableStateOf(false) }
-    var showSubscriptionDialog by remember { mutableStateOf(false) }
+    var showSecurityPinDialog by remember { mutableStateOf(false) }
 
     // FlashGet New Feature Dialogs
     var showLivePaintingDialog by remember { mutableStateOf(false) }
@@ -406,15 +410,19 @@ fun DashboardScreen(
         AntiUninstallProtectionDialog(
             child = child,
             isHindi = isHindi,
+            masterPin = masterPin,
             onToggleAntiUninstall = onToggleAntiUninstall,
-            onDismiss = { showAntiUninstallDialog = false }
+            onDismiss = { showAntiUninstallDialog = false },
+            onOpenPinManager = { showSecurityPinDialog = true }
         )
     }
 
-    if (showSubscriptionDialog) {
-        SubscriptionUpgradeDialog(
+    if (showSecurityPinDialog) {
+        SecurityPinManagementDialog(
+            masterPin = masterPin,
             isHindi = isHindi,
-            onDismiss = { showSubscriptionDialog = false }
+            onChangePin = onChangePin,
+            onDismiss = { showSecurityPinDialog = false }
         )
     }
 
@@ -778,7 +786,7 @@ fun DashboardScreen(
                             color = Color(0xFF1E1E2E)
                         )
                         IconButton(
-                            onClick = { showSubscriptionDialog = true },
+                            onClick = { showSecurityPinDialog = true },
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
@@ -805,7 +813,7 @@ fun DashboardScreen(
                                 title = if (isHindi) "रिमोट कैमरा" else "Remote Camera",
                                 icon = Icons.Default.PhotoCamera,
                                 iconColor = Color(0xFF6C5CE7),
-                                badgeText = "Trial",
+                                badgeText = "Live",
                                 onClick = { showCameraDialog = true },
                                 modifier = Modifier.weight(1f)
                             )
@@ -814,7 +822,7 @@ fun DashboardScreen(
                                 title = if (isHindi) "स्क्रीन मिररिंग" else "Screen Mirroring",
                                 icon = Icons.Default.PhoneAndroid,
                                 iconColor = Color(0xFF00B894),
-                                badgeText = "Trial",
+                                badgeText = "Live",
                                 onClick = { showScreenMirrorDialog = true },
                                 modifier = Modifier.weight(1f)
                             )
@@ -827,7 +835,7 @@ fun DashboardScreen(
                                 title = if (isHindi) "वन-वे ऑडियो" else "One-Way Audio",
                                 icon = Icons.Default.Headphones,
                                 iconColor = Color(0xFF0984E3),
-                                badgeText = "Trial",
+                                badgeText = "Live",
                                 onClick = { showAudioDialog = true },
                                 modifier = Modifier.weight(1f)
                             )
@@ -961,7 +969,7 @@ fun DashboardScreen(
                             title = if (isHindi) "कैमरा रिकॉर्डिंग" else "Camera Recording",
                             icon = Icons.Default.Videocam,
                             iconColor = Color(0xFF6C5CE7),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showCameraDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -969,7 +977,7 @@ fun DashboardScreen(
                             title = if (isHindi) "स्क्रीन रिकॉर्डिंग" else "Screen Recording",
                             icon = Icons.Default.SmartDisplay,
                             iconColor = Color(0xFF6C5CE7),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showScreenMirrorDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -977,7 +985,7 @@ fun DashboardScreen(
                             title = if (isHindi) "एम्बिएंट रिकॉर्डिंग" else "Ambient Recording",
                             icon = Icons.Default.Mic,
                             iconColor = Color(0xFF6C5CE7),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showAudioDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -994,7 +1002,7 @@ fun DashboardScreen(
                             title = if (isHindi) "कैमरा स्नैपशॉट" else "Camera Snapshot",
                             icon = Icons.Default.PhotoCamera,
                             iconColor = Color(0xFF6C5CE7),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showCameraDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -1002,7 +1010,7 @@ fun DashboardScreen(
                             title = if (isHindi) "स्क्रीन स्नैपशॉट" else "Screen Snapshot",
                             icon = Icons.Default.PhoneAndroid,
                             iconColor = Color(0xFF6C5CE7),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showScreenMirrorDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -1074,7 +1082,7 @@ fun DashboardScreen(
                             title = if (isHindi) "उपयोग लॉग्स" else "Usage Logs",
                             icon = Icons.Default.History,
                             iconColor = Color(0xFF6C5CE7),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showUsageReportDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -1082,8 +1090,8 @@ fun DashboardScreen(
                             title = if (isHindi) "लाइव पेंटिंग" else "Live Painting",
                             icon = Icons.Default.Brush,
                             iconColor = Color(0xFFE84393),
-                            hasPro = true,
-                            isBeta = true,
+                            hasPro = false,
+                            isBeta = false,
                             onClick = { showLivePaintingDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -1093,6 +1101,39 @@ fun DashboardScreen(
                             iconColor = Color(0xFF4A69BD),
                             hasPro = false,
                             onClick = { showCheckPermissionsDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Row 3: Security PIN Management, Anti-Uninstall Protection, Stealth Guide
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        FlashGetGridItem(
+                            title = if (isHindi) "सुरक्षा पिन व कोड" else "Security PIN",
+                            icon = Icons.Default.Key,
+                            iconColor = Color(0xFF6C5CE7),
+                            hasPro = false,
+                            onClick = { showSecurityPinDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "एंटी-अनइंस्टॉल" else "Anti-Uninstall",
+                            icon = Icons.Default.Shield,
+                            iconColor = Color(0xFF00B894),
+                            hasPro = false,
+                            onClick = { showAntiUninstallDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FlashGetGridItem(
+                            title = if (isHindi) "छिपा ऐप गाइड" else "Stealth Guide",
+                            icon = Icons.Default.VisibilityOff,
+                            iconColor = Color(0xFFE17055),
+                            hasPro = false,
+                            onClick = { showHiddenGuideDialog = true },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -1129,7 +1170,7 @@ fun DashboardScreen(
                             title = if (isHindi) "सोशल ऐप डिटेक्शन" else "Social App Detection",
                             icon = Icons.Default.Chat,
                             iconColor = Color(0xFF25D366),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showSocialAppDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -1137,7 +1178,7 @@ fun DashboardScreen(
                             title = if (isHindi) "कॉल व SMS सुरक्षा" else "Call & SMS Safety",
                             icon = Icons.Default.Call,
                             iconColor = Color(0xFF6C5CE7),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showCallHistoryDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -1145,7 +1186,7 @@ fun DashboardScreen(
                             title = if (isHindi) "एल्बम व गैलरी सुरक्षा" else "Albums Safety",
                             icon = Icons.Default.PhotoLibrary,
                             iconColor = Color(0xFF6C5CE7),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showAlbumsSafetyDialog = true },
                             modifier = Modifier.weight(1f)
                         )
@@ -1162,7 +1203,7 @@ fun DashboardScreen(
                             title = if (isHindi) "ब्राउज़र सुरक्षा" else "Browser Safety",
                             icon = Icons.Default.Public,
                             iconColor = Color(0xFF0984E3),
-                            hasPro = true,
+                            hasPro = false,
                             onClick = { showBrowserSafetyDialog = true },
                             modifier = Modifier.weight(1f)
                         )

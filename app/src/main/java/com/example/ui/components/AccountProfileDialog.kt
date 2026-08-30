@@ -80,7 +80,8 @@ fun AccountProfileDialog(
     isHindi: Boolean,
     onLogout: () -> Unit,
     onDismiss: () -> Unit,
-    onChangePin: ((String) -> Unit)? = null
+    onChangePin: ((String) -> Unit)? = null,
+    onOpenPinManager: (() -> Unit)? = null
 ) {
     val userName = user?.name ?: if (isHindi) "पैरेंट यूज़र" else "Parent User"
     val userEmail = user?.email ?: if (isHindi) "लॉगिन नहीं है" else "Not logged in"
@@ -226,15 +227,15 @@ fun AccountProfileDialog(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = if (isHindi) "मास्टर सुरक्षा पिन: $masterPin" else "Master Security PIN: $masterPin",
+                                        text = if (isHindi) "सेटिंग लॉक और अनइंस्टॉल सुरक्षा पिन:" else "Master / Anti-Uninstall PIN:",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp,
                                         color = NaturalTextPrimary
                                     )
                                     Text(
-                                        text = if (isHindi) "अनइंस्टॉल सुरक्षा पिन: ${user?.antiUninstallPin ?: masterPin}" else "Anti-Uninstall PIN: ${user?.antiUninstallPin ?: masterPin}",
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 11.sp,
+                                        text = "${user?.antiUninstallPin ?: masterPin}",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 14.sp,
                                         color = NaturalGreen900
                                     )
                                 }

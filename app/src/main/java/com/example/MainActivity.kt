@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.ChildCare
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -92,6 +93,7 @@ import com.example.ui.components.AccountProfileDialog
 import com.example.ui.components.AddChildDialog
 import com.example.ui.components.ChildAvatarCircle
 import com.example.ui.components.PinKeypadDialog
+import com.example.ui.components.SecurityPinManagementDialog
 import com.example.ui.screens.ActivityLogScreen
 import com.example.ui.screens.AppsControlScreen
 import com.example.ui.screens.AuthScreen
@@ -137,11 +139,12 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
     val currentLang by viewModel.currentLanguage.collectAsStateWithLifecycle()
     val isChildMode by viewModel.isChildModeActive.collectAsStateWithLifecycle()
     val parentPairingCode by viewModel.parentPairingCode.collectAsStateWithLifecycle()
+    val selectedAppRole by viewModel.appRole.collectAsStateWithLifecycle()
 
     val isHindi = currentLang == "hi"
 
-    var selectedAppRole by remember { mutableStateOf<String?>(null) }
     var showAccountProfileDialog by remember { mutableStateOf(false) }
+    var showSecurityPinDialog by remember { mutableStateOf(false) }
     var selectedNavTab by remember { mutableIntStateOf(1) } // Default to Tab 1: Device (FlashGet Hub)
     var showAddChildDialog by remember { mutableStateOf(false) }
     var showChildDropdown by remember { mutableStateOf(false) }
@@ -152,7 +155,7 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
         RoleSelectionScreen(
             isHindi = isHindi,
             onToggleLanguage = { viewModel.toggleLanguage() },
-            onSelectParentRole = { selectedAppRole = "parent" },
+            onSelectParentRole = { viewModel.setAppRole("parent") },
             onLinkChildDeviceWithCode = { code, onResult ->
                 viewModel.linkChildWithPairingCode(code, onResult)
             }
@@ -189,7 +192,22 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
             onDismiss = { showAccountProfileDialog = false },
             onChangePin = { newPin ->
                 viewModel.changePin(newPin)
+            },
+            onOpenPinManager = {
+                showAccountProfileDialog = false
+                showSecurityPinDialog = true
             }
+        )
+    }
+
+    if (showSecurityPinDialog) {
+        SecurityPinManagementDialog(
+            masterPin = masterPin,
+            isHindi = isHindi,
+            onChangePin = { newPin ->
+                viewModel.changePin(newPin)
+            },
+            onDismiss = { showSecurityPinDialog = false }
         )
     }
 
@@ -438,7 +456,9 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
                     onClearSmsLogs = { viewModel.clearSmsMessages() },
                     onClearYouTubeHistory = { viewModel.clearYouTubeWatchHistory() },
                     pairingCode = parentPairingCode,
-                    onRegeneratePairingCode = { viewModel.regeneratePairingCode() }
+                    onRegeneratePairingCode = { viewModel.regeneratePairingCode() },
+                    masterPin = masterPin,
+                    onChangePin = { viewModel.changePin(it) }
                 )
 
                 // Tab 2: Me (Settings, Parent Account, Child Mode, Pin, Language)
@@ -496,6 +516,37 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
                         colors = CardDefaults.cardColors(containerColor = Color.White)
                     ) {
                         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            // 4-Digit Master Security PIN Management (Dedicated Direct Row)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showSecurityPinDialog = true }
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Key, contentDescription = null, tint = Color(0xFF6C5CE7))
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            if (isHindi) "4-अंकीय मास्टर सुरक्षा पिन" else "4-Digit Master Security PIN",
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            if (isHindi) "पैरेंट कोड: $masterPin (सेटिंग्स व लॉक सुरक्षा)" else "Parent Code: $masterPin (Admin Protected)",
+                                            fontSize = 11.sp,
+                                            color = Color(0xFF6C5CE7),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                Text(if (isHindi) "बदलें >" else "Manage >", color = Color(0xFF6C5CE7), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+
+                            HorizontalDivider(color = Color(0xFFECEFF8))
+
                             // Language switch
                             Row(
                                 modifier = Modifier
@@ -546,7 +597,7 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF6C5CE7))
                                     Spacer(modifier = Modifier.width(12.dp))
-                                    Text(if (isHindi) "खाता और सुरक्षा सेटिंग्स" else "Account & Security Settings", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                    Text(if (isHindi) "खाता और प्रोफाइल सेटिंग्स" else "Account Profile & Settings", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                 }
                                 Text(">", color = Color.Gray)
                             }
