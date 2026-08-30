@@ -76,23 +76,182 @@ import com.example.R
 fun AuthScreen(
     isHindi: Boolean,
     onLogin: (email: String, pass: String, onResult: (Boolean, String) -> Unit) -> Unit,
-    onSignUp: (name: String, email: String, pass: String, phone: String, onResult: (Boolean, String) -> Unit) -> Unit,
+    onSignUp: (name: String, email: String, pass: String, phone: String, pin: String, onResult: (Boolean, String) -> Unit) -> Unit,
     onGoogleLogin: (email: String, name: String) -> Unit,
-    onGuestLogin: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isSignUpMode by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("Parent User") }
-    var email by remember { mutableStateOf("thakfree@gmail.com") }
-    var password by remember { mutableStateOf("123456") }
-    var phone by remember { mutableStateOf("+91 98765 43210") }
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var antiUninstallPin by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var showSupportDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
+    var showGoogleAccountPicker by remember { mutableStateOf(false) }
+    var customGoogleEmail by remember { mutableStateOf("") }
+    var showCustomEmailInput by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
+
+    if (showGoogleAccountPicker) {
+        Dialog(onDismissRequest = { showGoogleAccountPicker = false; showCustomEmailInput = false }) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "G",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF4285F4)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHindi) "गूगल खाता चुनें" else "Choose a Google Account",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = Color(0xFF1E1E2E)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (isHindi) "Parent Control MD जारी रखने के लिए खाता चुनें" else "to continue to Parent Control MD",
+                        fontSize = 13.sp,
+                        color = Color(0xFF6C7086)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (!showCustomEmailInput) {
+                        val deviceAccounts = listOf(
+                            Pair("Musahid Raza", "musahidraza78600@gmail.com"),
+                            Pair("Parent Guard Admin", "parent.guard.official@gmail.com"),
+                            Pair("Family Protection Hub", "family.shield.admin@gmail.com")
+                        )
+
+                        deviceAccounts.forEach { (accName, accEmail) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        showGoogleAccountPicker = false
+                                        onGoogleLogin(accEmail, accName)
+                                    }
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF6C5CE7)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = accName.take(1).uppercase(),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = accName,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF1E1E2E)
+                                    )
+                                    Text(
+                                        text = accEmail,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF6C7086)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+
+                        Divider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFE4E7F5))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { showCustomEmailInput = true }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFE4E7F5)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = if (isHindi) "+ दूसरा जीमेल खाता जोड़ें" else "+ Add another account",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = Color(0xFF6C5CE7)
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = if (isHindi) "अपना जीमेल या ईमेल दर्ज करें" else "Enter your Gmail or email",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1E1E2E)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = customGoogleEmail,
+                            onValueChange = { customGoogleEmail = it },
+                            placeholder = { Text("example@gmail.com") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { showCustomEmailInput = false }) {
+                                Text(if (isHindi) "वापस" else "Back", color = Color(0xFF6C7086))
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    if (customGoogleEmail.isNotBlank()) {
+                                        val name = customGoogleEmail.substringBefore("@").replace(".", " ")
+                                            .replaceFirstChar { it.uppercase() }
+                                        showGoogleAccountPicker = false
+                                        showCustomEmailInput = false
+                                        onGoogleLogin(customGoogleEmail.trim(), name)
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(if (isHindi) "जारी रखें" else "Continue", color = Color.White)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     if (showForgotPasswordDialog) {
         Dialog(onDismissRequest = { showForgotPasswordDialog = false }) {
@@ -197,13 +356,6 @@ fun AuthScreen(
                         text = { Text("Privacy Policy") },
                         onClick = { showMoreMenu = false }
                     )
-                    DropdownMenuItem(
-                        text = { Text("Skip & Continue as Guest") },
-                        onClick = {
-                            showMoreMenu = false
-                            onGuestLogin()
-                        }
-                    )
                 }
             }
         }
@@ -260,13 +412,20 @@ fun AuthScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(if (isHindi) "पूरा नाम" else "Full Name") },
+                label = { Text(if (isHindi) "पूरा नाम" else "Full Name", color = Color(0xFF4A5568)) },
+                placeholder = { Text("Enter full name", color = Color(0xFFA0AEC0)) },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF6C5CE7)) },
                 modifier = Modifier.fillMaxWidth().testTag("auth_name_field"),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF6C5CE7),
-                    unfocusedBorderColor = Color(0xFFE4E7F5)
+                    unfocusedBorderColor = Color(0xFFCBD5E1),
+                    focusedLabelColor = Color(0xFF6C5CE7),
+                    unfocusedLabelColor = Color(0xFF4A5568),
+                    focusedTextColor = Color(0xFF1E1E2E),
+                    unfocusedTextColor = Color(0xFF1E1E2E),
+                    focusedContainerColor = Color(0xFFF8F9FA),
+                    unfocusedContainerColor = Color(0xFFF8F9FA)
                 ),
                 singleLine = true
             )
@@ -277,14 +436,21 @@ fun AuthScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it; errorMessage = null },
-            label = { Text(if (isHindi) "ईमेल पता" else "Email") },
-            placeholder = { Text("example@gmail.com") },
+            label = { Text(if (isHindi) "ईमेल पता" else "Email", color = Color(0xFF4A5568)) },
+            placeholder = { Text("example@gmail.com", color = Color(0xFFA0AEC0)) },
+            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF6C5CE7)) },
             modifier = Modifier.fillMaxWidth().testTag("auth_email_field"),
             shape = RoundedCornerShape(16.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color(0xFF6C5CE7),
-                unfocusedBorderColor = Color(0xFFE4E7F5)
+                unfocusedBorderColor = Color(0xFFCBD5E1),
+                focusedLabelColor = Color(0xFF6C5CE7),
+                unfocusedLabelColor = Color(0xFF4A5568),
+                focusedTextColor = Color(0xFF1E1E2E),
+                unfocusedTextColor = Color(0xFF1E1E2E),
+                focusedContainerColor = Color(0xFFF8F9FA),
+                unfocusedContainerColor = Color(0xFFF8F9FA)
             ),
             singleLine = true
         )
@@ -295,8 +461,9 @@ fun AuthScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it; errorMessage = null },
-            label = { Text(if (isHindi) "पासवर्ड" else "Please enter password") },
-            placeholder = { Text("Please enter password") },
+            label = { Text(if (isHindi) "पासवर्ड" else "Password", color = Color(0xFF4A5568)) },
+            placeholder = { Text("Enter password", color = Color(0xFFA0AEC0)) },
+            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF6C5CE7)) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -309,21 +476,64 @@ fun AuthScreen(
             },
             modifier = Modifier.fillMaxWidth().testTag("auth_password_field"),
             shape = RoundedCornerShape(16.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = if (isSignUpMode) ImeAction.Next else ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = {
-                focusManager.clearFocus()
-                if (isSignUpMode) {
-                    onSignUp(name, email, password, phone) { ok, err -> if (!ok) errorMessage = err }
-                } else {
+                if (!isSignUpMode) {
+                    focusManager.clearFocus()
                     onLogin(email, password) { ok, err -> if (!ok) errorMessage = err }
                 }
             }),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color(0xFF6C5CE7),
-                unfocusedBorderColor = Color(0xFFE4E7F5)
+                unfocusedBorderColor = Color(0xFFCBD5E1),
+                focusedLabelColor = Color(0xFF6C5CE7),
+                unfocusedLabelColor = Color(0xFF4A5568),
+                focusedTextColor = Color(0xFF1E1E2E),
+                unfocusedTextColor = Color(0xFF1E1E2E),
+                focusedContainerColor = Color(0xFFF8F9FA),
+                unfocusedContainerColor = Color(0xFFF8F9FA)
             ),
             singleLine = true
         )
+
+        if (isSignUpMode) {
+            Spacer(modifier = Modifier.height(14.dp))
+            // Custom Master PIN (FlashGet Kids style)
+            OutlinedTextField(
+                value = antiUninstallPin,
+                onValueChange = { input ->
+                    if (input.length <= 4 && input.all { it.isDigit() }) {
+                        antiUninstallPin = input
+                        errorMessage = null
+                    }
+                },
+                label = { Text(if (isHindi) "अपना मनपसंद मास्टर सुरक्षा पिन (4 अंक)" else "Choose Custom Master PIN (4 digits)", color = Color(0xFF4A5568)) },
+                placeholder = { Text("उदा. 4890 (e.g. 4890)", color = Color(0xFFA0AEC0)) },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF6C5CE7)) },
+                modifier = Modifier.fillMaxWidth().testTag("auth_anti_uninstall_pin_field"),
+                shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    focusManager.clearFocus()
+                    if (antiUninstallPin.length != 4 || !antiUninstallPin.all { it.isDigit() }) {
+                        errorMessage = if (isHindi) "कृपया अपना मनपसंद 4-अंकों का मास्टर पिन दर्ज करें!" else "Please enter your custom 4-digit Master PIN!"
+                    } else {
+                        onSignUp(name, email, password, phone, antiUninstallPin) { ok, err -> if (!ok) errorMessage = err }
+                    }
+                }),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF6C5CE7),
+                    unfocusedBorderColor = Color(0xFFCBD5E1),
+                    focusedLabelColor = Color(0xFF6C5CE7),
+                    unfocusedLabelColor = Color(0xFF4A5568),
+                    focusedTextColor = Color(0xFF1E1E2E),
+                    unfocusedTextColor = Color(0xFF1E1E2E),
+                    focusedContainerColor = Color(0xFFF8F9FA),
+                    unfocusedContainerColor = Color(0xFFF8F9FA)
+                ),
+                singleLine = true
+            )
+        }
 
         if (!isSignUpMode) {
             // Forgot password? Link on the right
@@ -355,7 +565,7 @@ fun AuthScreen(
 
         // Sign In with Google Button (Bordered card button)
         OutlinedButton(
-            onClick = { onGoogleLogin(email, "Google Parent User") },
+            onClick = { showGoogleAccountPicker = true },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
@@ -392,7 +602,11 @@ fun AuthScreen(
             onClick = {
                 focusManager.clearFocus()
                 if (isSignUpMode) {
-                    onSignUp(name, email, password, phone) { ok, err -> if (!ok) errorMessage = err }
+                    if (antiUninstallPin.length != 4 || !antiUninstallPin.all { it.isDigit() }) {
+                        errorMessage = if (isHindi) "कृपया अपना मनपसंद 4-अंकों का मास्टर पिन दर्ज करें!" else "Please enter your custom 4-digit Master PIN!"
+                    } else {
+                        onSignUp(name, email, password, phone, antiUninstallPin) { ok, err -> if (!ok) errorMessage = err }
+                    }
                 } else {
                     onLogin(email, password) { ok, err -> if (!ok) errorMessage = err }
                 }

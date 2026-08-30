@@ -1,0 +1,228 @@
+package com.example.ui.components
+
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.example.ui.theme.*
+
+@Composable
+fun PairDeviceDialog(
+    pairingCode: String,
+    isHindi: Boolean,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val downloadLink = "https://ais-dev-c6tplr6aasw3eq4nllohfm-257389990740.europe-west2.run.app/download"
+    var copiedCode by remember { mutableStateOf(false) }
+    var copiedLink by remember { mutableStateOf(false) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(8.dp, RoundedCornerShape(24.dp))
+                .border(1.dp, NaturalBorder, RoundedCornerShape(24.dp)),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = NaturalSurface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(NaturalGreen100),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Download,
+                                contentDescription = null,
+                                tint = NaturalGreen700,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = if (isHindi) "चाइल्ड डिवाइस सेटअप व लिंक" else "Pair Child Device & Link",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = NaturalTextPrimary
+                        )
+                    }
+
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = NaturalTextSecondary)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = if (isHindi) 
+                        "फ्लैशगेट कीड्स की तरह अपने बच्चे के फोन को जोड़ने के लिए नीचे दिए गए 10-अंकों के कोड या डाउनलोड लिंक का उपयोग करें:" 
+                        else "Like FlashGet Kids, use the connection code or download link below to connect your child's phone:",
+                    fontSize = 13.sp,
+                    color = NaturalTextSecondary,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Pairing Code Card
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFF0EDFF),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = if (isHindi) "कनेक्शन कोड (Pairing Code)" else "Connection Pairing Code",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF6C5CE7)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = pairingCode,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 2.sp,
+                            color = Color(0xFF2D1E5E)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("Pairing Code", pairingCode)
+                                clipboard.setPrimaryClip(clip)
+                                copiedCode = true
+                                Toast.makeText(context, if (isHindi) "कोड कॉपी हो गया!" else "Code copied!", Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                        ) {
+                            Icon(if (copiedCode) Icons.Default.Check else Icons.Default.ContentCopy, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = if (copiedCode) "कॉपी किया गया" else "कोड कॉपी करें", fontSize = 12.sp, color = Color(0xFF6C5CE7))
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Download Link Card
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = NaturalSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = if (isHindi) "चाइल्ड ऐप डाउनलोड लिंक (Child APK Link)" else "Child App Download Link",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = NaturalTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = downloadLink,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NaturalGreen900,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    val clip = ClipData.newPlainText("Download Link", downloadLink)
+                                    clipboard.setPrimaryClip(clip)
+                                    copiedLink = true
+                                    Toast.makeText(context, if (isHindi) "लिंक कॉपी हो गया!" else "Link copied!", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                            ) {
+                                Icon(if (copiedLink) Icons.Default.Check else Icons.Default.ContentCopy, contentDescription = null, tint = NaturalGreen700, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = if (copiedLink) "कॉपी हुआ" else "लिंक कॉपी", fontSize = 12.sp, color = NaturalGreen700)
+                            }
+
+                            Button(
+                                onClick = {
+                                    val sendIntent = android.content.Intent().apply {
+                                        action = android.content.Intent.ACTION_SEND
+                                        putExtra(android.content.Intent.EXTRA_TEXT, "FlashGet Kids शैली में पैरेंट कंट्रोल ऐप डाउनलोड करें और यह कोड दर्ज करें: $pairingCode \nलिंक: $downloadLink")
+                                        type = "text/plain"
+                                    }
+                                    val shareIntent = android.content.Intent.createChooser(sendIntent, null)
+                                    context.startActivity(shareIntent)
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = NaturalGreen700)
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = if (isHindi) "व्हाट्सएप पर भेजें" else "Share via WhatsApp", fontSize = 12.sp, color = Color.White)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7))
+                ) {
+                    Text(text = if (isHindi) "समझ गया (Done)" else "Done", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            }
+        }
+    }
+}

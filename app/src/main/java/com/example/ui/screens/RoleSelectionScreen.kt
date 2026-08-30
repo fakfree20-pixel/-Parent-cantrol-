@@ -131,8 +131,8 @@ fun RoleSelectionScreen(
                                 errorMessage = null
                             }
                         },
-                        label = { Text(if (isHindi) "10-डिजिट कोड (उदा. 9839247105)" else "10-Digit Code (e.g. 9839247105)") },
-                        placeholder = { Text("9839247105") },
+                        label = { Text(if (isHindi) "10-अंकों का कनेक्शन कोड" else "10-Digit Pairing Code") },
+                        placeholder = { Text(if (isHindi) "पैरेंट ऐप का 10-अंकीय कोड" else "Enter 10-digit code") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("pairing_code_input"),

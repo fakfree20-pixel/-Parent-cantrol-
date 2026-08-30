@@ -136,10 +136,10 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
     val masterPin by viewModel.masterPin.collectAsStateWithLifecycle()
     val currentLang by viewModel.currentLanguage.collectAsStateWithLifecycle()
     val isChildMode by viewModel.isChildModeActive.collectAsStateWithLifecycle()
+    val parentPairingCode by viewModel.parentPairingCode.collectAsStateWithLifecycle()
 
     val isHindi = currentLang == "hi"
 
-    var isGuestAuthenticated by remember { mutableStateOf(false) }
     var selectedAppRole by remember { mutableStateOf<String?>(null) }
     var showAccountProfileDialog by remember { mutableStateOf(false) }
     var selectedNavTab by remember { mutableIntStateOf(1) } // Default to Tab 1: Device (FlashGet Hub)
@@ -161,21 +161,17 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
     }
 
     // 2. If Parent role selected but not logged in yet, show AuthScreen
-    if (selectedAppRole == "parent" && currentUser == null && !isGuestAuthenticated) {
+    if (selectedAppRole == "parent" && currentUser == null) {
         AuthScreen(
             isHindi = isHindi,
             onLogin = { email, pass, onResult ->
                 viewModel.loginWithEmail(email, pass, onResult)
             },
-            onSignUp = { name, email, pass, phone, onResult ->
-                viewModel.signUpWithEmail(name, email, pass, phone, onResult)
+            onSignUp = { name, email, pass, phone, pin, onResult ->
+                viewModel.signUpWithEmail(name, email, pass, phone, pin, onResult)
             },
             onGoogleLogin = { email, name ->
                 viewModel.loginWithGoogle(email, name)
-            },
-            onGuestLogin = {
-                viewModel.loginWithEmail("musahidraza78600@gmail.com", "123456") { _, _ -> }
-                isGuestAuthenticated = true
             }
         )
         return
@@ -188,10 +184,12 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
             isHindi = isHindi,
             onLogout = {
                 viewModel.logoutUser()
-                isGuestAuthenticated = false
                 showAccountProfileDialog = false
             },
-            onDismiss = { showAccountProfileDialog = false }
+            onDismiss = { showAccountProfileDialog = false },
+            onChangePin = { newPin ->
+                viewModel.changePin(newPin)
+            }
         )
     }
 
@@ -438,7 +436,9 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
                     },
                     onClearCallLogs = { viewModel.clearCallLogs() },
                     onClearSmsLogs = { viewModel.clearSmsMessages() },
-                    onClearYouTubeHistory = { viewModel.clearYouTubeWatchHistory() }
+                    onClearYouTubeHistory = { viewModel.clearYouTubeWatchHistory() },
+                    pairingCode = parentPairingCode,
+                    onRegeneratePairingCode = { viewModel.regeneratePairingCode() }
                 )
 
                 // Tab 2: Me (Settings, Parent Account, Child Mode, Pin, Language)
@@ -474,13 +474,13 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
                             Spacer(modifier = Modifier.width(14.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = currentUser?.name ?: "Musahid Raza",
+                                    text = currentUser?.name ?: if (isHindi) "पैरेंट यूज़र" else "Parent User",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 17.sp,
                                     color = Color(0xFF1E1E2E)
                                 )
                                 Text(
-                                    text = currentUser?.email ?: "musahidraza78600@gmail.com",
+                                    text = currentUser?.email ?: (if (isHindi) "गेस्ट मोड" else "Guest Mode"),
                                     fontSize = 12.sp,
                                     color = Color(0xFF6C7086)
                                 )

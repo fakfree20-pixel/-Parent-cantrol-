@@ -17,9 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Key
@@ -34,9 +37,16 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,11 +79,12 @@ fun AccountProfileDialog(
     masterPin: String,
     isHindi: Boolean,
     onLogout: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onChangePin: ((String) -> Unit)? = null
 ) {
-    val userName = user?.name ?: "Musahid Raza"
-    val userEmail = user?.email ?: "musahidraza78600@gmail.com"
-    val userPhone = user?.phoneNumber ?: "+91 98765 43210"
+    val userName = user?.name ?: if (isHindi) "पैरेंट यूज़र" else "Parent User"
+    val userEmail = user?.email ?: if (isHindi) "लॉगिन नहीं है" else "Not logged in"
+    val userPhone = user?.phoneNumber ?: "—"
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -194,30 +205,103 @@ fun AccountProfileDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Master PIN Info
+                // Master PIN Info with Edit option
+                var isEditingPin by remember { mutableStateOf(false) }
+                var newPinInput by remember { mutableStateOf("") }
+                var pinError by remember { mutableStateOf<String?>(null) }
+
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = EarthAmber100.copy(alpha = 0.5f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Key, contentDescription = null, tint = NaturalGreen700, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = if (isHindi) "मास्टर सुरक्षा पिन: $masterPin" else "Master Security PIN: $masterPin",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = NaturalTextPrimary
-                            )
-                            Text(
-                                text = if (isHindi) "चाइल्ड मोड लॉक खोलने व अनइंस्टॉल सुरक्षा के लिए" else "Used to unlock child mode and modify restrictions",
-                                fontSize = 10.sp,
-                                color = NaturalTextSecondary
-                            )
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Icon(Icons.Default.Key, contentDescription = null, tint = NaturalGreen700, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isHindi) "मास्टर सुरक्षा पिन: $masterPin" else "Master Security PIN: $masterPin",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = NaturalTextPrimary
+                                    )
+                                    Text(
+                                        text = if (isHindi) "अनइंस्टॉल सुरक्षा पिन: ${user?.antiUninstallPin ?: masterPin}" else "Anti-Uninstall PIN: ${user?.antiUninstallPin ?: masterPin}",
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 11.sp,
+                                        color = NaturalGreen900
+                                    )
+                                }
+                            }
+                            if (onChangePin != null) {
+                                IconButton(
+                                    onClick = {
+                                        isEditingPin = !isEditingPin
+                                        newPinInput = ""
+                                        pinError = null
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit PIN",
+                                        tint = Color(0xFF6C5CE7),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (isEditingPin) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = newPinInput,
+                                    onValueChange = { input ->
+                                        if (input.length <= 4 && input.all { it.isDigit() }) {
+                                            newPinInput = input
+                                            pinError = null
+                                        }
+                                    },
+                                    placeholder = { Text("उदा. 5678", fontSize = 11.sp) },
+                                    label = { Text(if (isHindi) "नया पिन (4 अंक)" else "New PIN (4 digit)", fontSize = 11.sp) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color(0xFF6C5CE7),
+                                        unfocusedBorderColor = Color(0xFFCBD5E1)
+                                    )
+                                )
+                                Button(
+                                    onClick = {
+                                        if (newPinInput.length == 4 && newPinInput.all { it.isDigit() }) {
+                                            onChangePin?.invoke(newPinInput)
+                                            isEditingPin = false
+                                        } else {
+                                            pinError = if (isHindi) "कृपया 4 अंक दर्ज करें" else "Must be 4 digits"
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.height(38.dp)
+                                ) {
+                                    Text(if (isHindi) "बदलें" else "Save", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+                            if (pinError != null) {
+                                Text(pinError!!, color = Color.Red, fontSize = 10.sp, modifier = Modifier.padding(start = 4.dp, top = 4.dp))
+                            }
                         }
                     }
                 }

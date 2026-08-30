@@ -37,6 +37,15 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
     init {
         val db = AppDatabase.getDatabase(application)
         repository = ParentalRepository(db.parentalControlDao())
+
+        // Sync masterPin with the logged-in user's custom antiUninstallPin automatically!
+        viewModelScope.launch {
+            repository.currentUserAccount.collect { user ->
+                if (user != null) {
+                    _masterPin.value = user.antiUninstallPin
+                }
+            }
+        }
     }
 
     // Language setting ("hi" = Hindi, "en" = English)
@@ -147,6 +156,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
     fun changePin(newPin: String) {
         if (newPin.length == 4 && newPin.all { it.isDigit() }) {
             _masterPin.value = newPin
+            updateAntiUninstallPin(newPin)
         }
     }
 
@@ -166,8 +176,24 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         _isChildModeActive.value = active
     }
 
-    // 10-Digit Parent Pairing Code
-    val parentPairingCode: String = "9839247105"
+    // Persistent Unique 10-Digit Parent Pairing Code (Generated uniquely per installation)
+    private val prefs = application.getSharedPreferences("parental_control_prefs", android.content.Context.MODE_PRIVATE)
+    
+    private val _parentPairingCode = MutableStateFlow(
+        prefs.getString("unique_pairing_code", null) ?: run {
+            val generated = (1000000000L + (Math.random() * 8999999999L).toLong()).toString()
+            prefs.edit().putString("unique_pairing_code", generated).apply()
+            generated
+        }
+    )
+    val parentPairingCode: StateFlow<String> = _parentPairingCode.asStateFlow()
+
+    fun regeneratePairingCode(): String {
+        val newCode = (1000000000L + (Math.random() * 8999999999L).toLong()).toString()
+        prefs.edit().putString("unique_pairing_code", newCode).apply()
+        _parentPairingCode.value = newCode
+        return newCode
+    }
 
     fun linkChildWithPairingCode(code: String, onResult: (Boolean, String) -> Unit) {
         if (code.length == 10 && code.all { it.isDigit() }) {
@@ -208,7 +234,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
     }
 
     private fun initFirebaseSync() {
-        FirebaseCloudSyncManager.startListeningToChildDevice(parentPairingCode) { data ->
+        FirebaseCloudSyncManager.startListeningToChildDevice(_parentPairingCode.value) { data ->
             viewModelScope.launch {
                 _lastCloudSyncTime.value = System.currentTimeMillis()
                 _isCloudConnected.value = true
@@ -235,7 +261,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         val child = activeChildProfile.value ?: return
         viewModelScope.launch {
             _lastCloudSyncTime.value = System.currentTimeMillis()
-            FirebaseCloudSyncManager.syncChildProfileToCloud(child, parentPairingCode)
+            FirebaseCloudSyncManager.syncChildProfileToCloud(child, _parentPairingCode.value)
         }
     }
 
@@ -477,14 +503,15 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         viewModelScope.launch {
             val success = repository.loginWithEmail(email, pass)
             if (success) {
+                regeneratePairingCode()
                 onResult(true, "सफलतापूर्वक लॉगिन हुआ! (Logged in successfully)")
             } else {
-                onResult(false, "लॉगिन विफल रहा (Login failed)")
+                onResult(false, "खाता नहीं मिला या पासवर्ड गलत है। कृपया नया खाता बनाएं (Account not found or incorrect password. Please Sign Up)")
             }
         }
     }
 
-    fun signUpWithEmail(name: String, email: String, pass: String, phone: String = "", onResult: (Boolean, String) -> Unit) {
+    fun signUpWithEmail(name: String, email: String, pass: String, phone: String = "", antiUninstallPin: String = "1234", onResult: (Boolean, String) -> Unit) {
         if (name.isBlank()) {
             onResult(false, "कृपया अपना नाम दर्ज करें (Please enter your name)")
             return
@@ -498,8 +525,9 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
             return
         }
         viewModelScope.launch {
-            val success = repository.signUpWithEmail(name, email, pass, phone)
+            val success = repository.signUpWithEmail(name, email, pass, phone, antiUninstallPin)
             if (success) {
+                regeneratePairingCode()
                 onResult(true, "खाता सफलतापूर्वक बन गया! (Account created successfully)")
             } else {
                 onResult(false, "खाता बनाने में त्रुटि (Sign up failed)")
@@ -507,9 +535,19 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
+    fun updateAntiUninstallPin(newPin: String) {
+        viewModelScope.launch {
+            val user = currentUserAccount.value
+            if (user != null) {
+                repository.signUpWithEmail(user.name, user.email, user.passwordHash, user.phoneNumber, newPin)
+            }
+        }
+    }
+
     fun loginWithGoogle(email: String, name: String) {
         viewModelScope.launch {
             repository.loginWithGoogle(email, name)
+            regeneratePairingCode()
         }
     }
 

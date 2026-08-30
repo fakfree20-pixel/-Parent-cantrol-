@@ -232,30 +232,21 @@ class ParentalRepository(private val dao: ParentalControlDao) {
         dao.logOutAllUsers()
         val existing = dao.getUserByEmail(email.trim().lowercase())
         if (existing != null) {
+            if (existing.passwordHash.isNotBlank() && password.isNotBlank() && existing.passwordHash != password) {
+                return false
+            }
             dao.updateUserAccount(existing.copy(isLoggedIn = true))
             return true
         } else {
-            val name = email.substringBefore("@").replace(".", " ")
-                .split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
-            dao.insertUserAccount(
-                com.example.data.model.UserAccount(
-                    name = if (name.isNotBlank()) name else "Parent User",
-                    email = email.trim().lowercase(),
-                    passwordHash = password,
-                    isLoggedIn = true,
-                    role = "PARENT",
-                    authProvider = "EMAIL"
-                )
-            )
-            return true
+            return false
         }
     }
 
-    suspend fun signUpWithEmail(name: String, email: String, password: String, phone: String = ""): Boolean {
+    suspend fun signUpWithEmail(name: String, email: String, password: String, phone: String = "", antiUninstallPin: String = "1234"): Boolean {
         dao.logOutAllUsers()
         val existing = dao.getUserByEmail(email.trim().lowercase())
         if (existing != null) {
-            dao.updateUserAccount(existing.copy(name = name, passwordHash = password, isLoggedIn = true, phoneNumber = phone))
+            dao.updateUserAccount(existing.copy(name = name, passwordHash = password, isLoggedIn = true, phoneNumber = phone, antiUninstallPin = antiUninstallPin.ifBlank { existing.antiUninstallPin }))
         } else {
             dao.insertUserAccount(
                 com.example.data.model.UserAccount(
@@ -264,6 +255,7 @@ class ParentalRepository(private val dao: ParentalControlDao) {
                     passwordHash = password,
                     isLoggedIn = true,
                     phoneNumber = phone,
+                    antiUninstallPin = antiUninstallPin.ifBlank { "1234" },
                     role = "PARENT",
                     authProvider = "EMAIL"
                 )
@@ -271,6 +263,8 @@ class ParentalRepository(private val dao: ParentalControlDao) {
         }
         return true
     }
+
+
 
     suspend fun loginWithGoogle(email: String, name: String, photoUrl: String = ""): Boolean {
         dao.logOutAllUsers()

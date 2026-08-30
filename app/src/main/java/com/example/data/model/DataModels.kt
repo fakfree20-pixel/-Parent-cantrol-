@@ -150,6 +150,7 @@ data class UserAccount(
     val isLoggedIn: Boolean = true,
     val photoUrl: String = "",
     val phoneNumber: String = "",
+    val antiUninstallPin: String = "1234", // FlashGet Kids style Anti-Uninstall Password/PIN
     val role: String = "PARENT", // PARENT, GUARDIAN
     val authProvider: String = "EMAIL", // EMAIL, GOOGLE
     val createdTimestamp: Long = System.currentTimeMillis()

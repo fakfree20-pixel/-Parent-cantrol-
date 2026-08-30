@@ -2317,7 +2317,8 @@ fun DetailedUsageReportDialog(
 fun PairDeviceDialog(
     onDismiss: () -> Unit,
     isHindi: Boolean,
-    pairingCode: String = "9839247105"
+    pairingCode: String = "9839247105",
+    onRegenerateCode: () -> Unit = {}
 ) {
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
     var copied by remember { mutableStateOf(false) }
@@ -2378,24 +2379,45 @@ fun PairDeviceDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedButton(
-                    onClick = {
-                        clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(pairingCode))
-                        copied = true
-                    },
-                    shape = RoundedCornerShape(20.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C5CE7))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (copied) {
-                            if (isHindi) "✓ कोड कॉपी हो गया!" else "✓ Code Copied!"
-                        } else {
-                            if (isHindi) "📋 कोड कॉपी करें" else "📋 Copy Code"
+                    OutlinedButton(
+                        onClick = {
+                            clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(pairingCode))
+                            copied = true
                         },
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6C5CE7)
-                    )
+                        shape = RoundedCornerShape(20.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C5CE7))
+                    ) {
+                        Text(
+                            text = if (copied) {
+                                if (isHindi) "✓ कोड कॉपी हो गया!" else "✓ Code Copied!"
+                            } else {
+                                if (isHindi) "📋 कोड कॉपी करें" else "📋 Copy Code"
+                            },
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF6C5CE7)
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            onRegenerateCode()
+                            copied = false
+                        },
+                        shape = RoundedCornerShape(20.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C7086))
+                    ) {
+                        Text(
+                            text = if (isHindi) "🔄 नया कोड" else "🔄 New Code",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4A4E69)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
