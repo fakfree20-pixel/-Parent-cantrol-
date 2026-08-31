@@ -5,6 +5,7 @@ import com.example.data.model.ActivityLogItem
 import com.example.data.model.AppNotificationItem
 import com.example.data.model.AppUsageRule
 import com.example.data.model.ChildProfile
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
@@ -16,6 +17,7 @@ import kotlinx.coroutines.tasks.await
  * via Firebase Cloud Firestore with automatic offline fallback and local persistence.
  */
 object FirebaseCloudSyncManager {
+
     private const val TAG = "FirebaseCloudSync"
     private const val COLLECTION_DEVICES = "paired_devices"
     private const val SUB_COLLECTION_LOGS = "activity_logs"
@@ -34,10 +36,23 @@ object FirebaseCloudSyncManager {
     private var activeDeviceListener: ListenerRegistration? = null
     private var activeCommandListener: ListenerRegistration? = null
 
+    private suspend fun ensureAuthenticated() {
+        try {
+            val auth = FirebaseAuth.getInstance()
+            if (auth.currentUser == null) {
+                auth.signInAnonymously().await()
+                Log.d(TAG, "Signed in anonymously to Firebase")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to sign in anonymously", e)
+        }
+    }
+
     /**
      * Pushes current Child profile & lock status to Cloud Firestore
      */
     suspend fun syncChildProfileToCloud(child: ChildProfile, pairingCode: String = "9839247105") {
+        ensureAuthenticated()
         val db = firestore ?: return
         try {
             val deviceData = hashMapOf(
@@ -81,6 +96,7 @@ object FirebaseCloudSyncManager {
         commandType: String,
         payload: Map<String, Any> = emptyMap()
     ) {
+        ensureAuthenticated()
         val db = firestore ?: return
         try {
             val commandData = hashMapOf(
@@ -89,7 +105,6 @@ object FirebaseCloudSyncManager {
                 "status" to "PENDING",
                 "payload" to payload
             )
-
             db.collection(COLLECTION_DEVICES)
                 .document(pairingCode)
                 .collection(SUB_COLLECTION_COMMANDS)
@@ -109,8 +124,15 @@ object FirebaseCloudSyncManager {
         pairingCode: String = "9839247105",
         onDeviceUpdate: (Map<String, Any>) -> Unit
     ) {
+        // Run auth in background since this isn't a suspend function, 
+        // but it doesn't matter much for snapshot listener which reconnects.
         val db = firestore ?: return
         stopListening()
+        
+        try {
+            FirebaseAuth.getInstance().signInAnonymously()
+        } catch(e: Exception) {}
+
         try {
             activeDeviceListener = db.collection(COLLECTION_DEVICES)
                 .document(pairingCode)
@@ -135,6 +157,7 @@ object FirebaseCloudSyncManager {
      * Uploads an Activity Log item to Cloud
      */
     suspend fun uploadActivityLog(log: ActivityLogItem, pairingCode: String = "9839247105") {
+        ensureAuthenticated()
         val db = firestore ?: return
         try {
             val logData = hashMapOf(
@@ -160,6 +183,7 @@ object FirebaseCloudSyncManager {
      * Uploads an App Notification item to Cloud
      */
     suspend fun uploadNotification(notif: AppNotificationItem, pairingCode: String = "9839247105") {
+        ensureAuthenticated()
         val db = firestore ?: return
         try {
             val notifData = hashMapOf(

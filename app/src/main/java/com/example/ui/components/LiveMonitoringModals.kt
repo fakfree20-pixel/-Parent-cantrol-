@@ -330,6 +330,22 @@ fun RemoteCameraDialog(
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
+                    
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.Red.copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = if (isHindi) "⚠️ डेमो / सिमुलेशन मोड" else "⚠️ DEMO / SIMULATION MODE",
+                            color = Color(0xFFFF5252),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     // Audio Level & Night mode indicator
                     Row(
@@ -2023,6 +2039,21 @@ fun OneWayAudioDialog(
                     ) {
                         Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
                     }
+                }
+                
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Red.copy(alpha = 0.15f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f)),
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "⚠️ डेमो / सिमुलेशन मोड" else "⚠️ DEMO / SIMULATION MODE",
+                        color = Color(0xFFFF5252),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
                 }
 
                 // Pulsing Audio Visualizer Center

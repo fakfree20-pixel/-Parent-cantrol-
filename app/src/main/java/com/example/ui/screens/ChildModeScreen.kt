@@ -49,6 +49,7 @@ import com.example.ui.components.SetupPermissionItem
 import com.example.ui.components.checkAllPermissions
 import com.example.ui.components.formatMinutes
 import com.example.ui.theme.*
+import android.os.Build
 
 @Composable
 fun ChildModeScreen(
@@ -95,6 +96,19 @@ fun ChildModeScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) {
         permissionStatusMap = checkAllPermissions(context)
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            val serviceIntent = Intent(context, com.example.service.ChildMonitoringService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
