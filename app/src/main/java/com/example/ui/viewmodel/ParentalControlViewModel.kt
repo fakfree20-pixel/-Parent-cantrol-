@@ -1,6 +1,7 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.AppDatabase
@@ -288,6 +289,8 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         initFirebaseSync()
     }
 
+    private var parentPollJob: Job? = null
+
     private fun initFirebaseSync() {
         val codeToListen = if (_isChildModeActive.value) _childPairingCode.value else _parentPairingCode.value
         if (codeToListen != null) {
@@ -295,14 +298,19 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                 viewModelScope.launch {
                     _lastCloudSyncTime.value = System.currentTimeMillis()
                     _isCloudConnected.value = true
-                    val child = activeChildProfile.value
-                    if (child != null) {
-                        val isLocked = data["isLocked"] as? Boolean ?: child.isLocked
-                        val battery = (data["batteryPercent"] as? Number)?.toInt() ?: child.batteryPercent
-                        val isOnline = data["isDeviceOnline"] as? Boolean ?: child.isDeviceOnline
-                        if (isLocked != child.isLocked || battery != child.batteryPercent || isOnline != child.isDeviceOnline) {
+                    val profiles = allChildProfiles.value
+                    val childName = data["childName"] as? String ?: "Linked Child"
+                    val deviceName = data["deviceName"] as? String ?: "Connected Child Phone"
+                    val battery = (data["batteryPercent"] as? Number)?.toInt() ?: 90
+                    val isLocked = data["isLocked"] as? Boolean ?: false
+                    val isOnline = data["isDeviceOnline"] as? Boolean ?: true
+
+                    if (profiles.isNotEmpty()) {
+                        val currentChild = activeChildProfile.value ?: profiles.first()
+                        if (isLocked != currentChild.isLocked || battery != currentChild.batteryPercent || isOnline != currentChild.isDeviceOnline || deviceName != currentChild.deviceModel) {
                             repository.updateChildProfile(
-                                child.copy(
+                                currentChild.copy(
+                                    deviceModel = deviceName,
                                     isLocked = isLocked,
                                     batteryPercent = battery,
                                     isDeviceOnline = isOnline
@@ -311,34 +319,119 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                         }
                     } else if (!_isChildModeActive.value) {
                         // Parent device: automatically create a local profile if child connected from cloud
-                        val childName = data["childName"] as? String ?: "Linked Child"
-                        val deviceName = data["deviceName"] as? String ?: "Connected Phone"
-                        val battery = (data["batteryPercent"] as? Number)?.toInt() ?: 100
-                        val isLocked = data["isLocked"] as? Boolean ?: false
-                        
                         val newId = repository.insertChildProfile(ChildProfile(
                             name = childName,
                             age = 10,
                             avatarIndex = 0,
                             deviceModel = deviceName,
                             batteryPercent = battery,
-                            isDeviceOnline = true,
+                            isDeviceOnline = isOnline,
                             isLocked = isLocked
                         ))
                         _selectedChildId.value = newId
                     }
                 }
             }
+
+            if (!_isChildModeActive.value) {
+                startParentCloudPolling(codeToListen)
+            }
+        }
+    }
+
+    private fun startParentCloudPolling(pairingCode: String) {
+        parentPollJob?.cancel()
+        parentPollJob = viewModelScope.launch {
+            while (isActive) {
+                try {
+                    val data = FirebaseCloudSyncManager.fetchChildDeviceDirectly(pairingCode)
+                    if (data != null) {
+                        _lastCloudSyncTime.value = System.currentTimeMillis()
+                        _isCloudConnected.value = true
+                        val profiles = allChildProfiles.value
+                        val childName = data["childName"] as? String ?: "Linked Child"
+                        val deviceName = data["deviceName"] as? String ?: "Connected Child Phone"
+                        val battery = (data["batteryPercent"] as? Number)?.toInt() ?: 90
+                        val isLocked = data["isLocked"] as? Boolean ?: false
+                        val isOnline = data["isDeviceOnline"] as? Boolean ?: true
+
+                        if (profiles.isNotEmpty()) {
+                            val currentChild = activeChildProfile.value ?: profiles.first()
+                            if (battery != currentChild.batteryPercent || isOnline != currentChild.isDeviceOnline || deviceName != currentChild.deviceModel || isLocked != currentChild.isLocked) {
+                                repository.updateChildProfile(
+                                    currentChild.copy(
+                                        deviceModel = deviceName,
+                                        batteryPercent = battery,
+                                        isDeviceOnline = isOnline,
+                                        isLocked = isLocked
+                                    )
+                                )
+                            }
+                        } else if (!_isChildModeActive.value) {
+                            val newId = repository.insertChildProfile(ChildProfile(
+                                name = childName,
+                                age = 10,
+                                avatarIndex = 0,
+                                deviceModel = deviceName,
+                                batteryPercent = battery,
+                                isDeviceOnline = isOnline,
+                                isLocked = isLocked
+                            ))
+                            _selectedChildId.value = newId
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w("ParentViewModel", "Cloud poll error: ${e.message}")
+                }
+                delay(6000) // Poll every 6 seconds
+            }
         }
     }
 
     fun syncNowWithCloud() {
-        val child = activeChildProfile.value ?: return
         viewModelScope.launch {
             _lastCloudSyncTime.value = System.currentTimeMillis()
             val codeToUse = if (_isChildModeActive.value) _childPairingCode.value else _parentPairingCode.value
             if (codeToUse != null) {
-                FirebaseCloudSyncManager.syncChildProfileToCloud(child, codeToUse)
+                if (_isChildModeActive.value) {
+                    val child = activeChildProfile.value
+                    if (child != null) {
+                        FirebaseCloudSyncManager.syncChildProfileToCloud(child, codeToUse)
+                    }
+                } else {
+                    val cloudData = FirebaseCloudSyncManager.fetchChildDeviceDirectly(codeToUse)
+                    if (cloudData != null) {
+                        val profiles = allChildProfiles.value
+                        val childName = cloudData["childName"] as? String ?: "Linked Child"
+                        val deviceName = cloudData["deviceName"] as? String ?: "Connected Child Phone"
+                        val battery = (cloudData["batteryPercent"] as? Number)?.toInt() ?: 90
+                        val isLocked = cloudData["isLocked"] as? Boolean ?: false
+                        val isOnline = cloudData["isDeviceOnline"] as? Boolean ?: true
+
+                        if (profiles.isNotEmpty()) {
+                            val currentChild = activeChildProfile.value ?: profiles.first()
+                            repository.updateChildProfile(
+                                currentChild.copy(
+                                    deviceModel = deviceName,
+                                    batteryPercent = battery,
+                                    isDeviceOnline = isOnline,
+                                    isLocked = isLocked
+                                )
+                            )
+                        } else {
+                            val newId = repository.insertChildProfile(ChildProfile(
+                                name = childName,
+                                age = 10,
+                                avatarIndex = 0,
+                                deviceModel = deviceName,
+                                batteryPercent = battery,
+                                isDeviceOnline = isOnline,
+                                isLocked = isLocked
+                            ))
+                            _selectedChildId.value = newId
+                        }
+                    }
+                }
             }
         }
     }

@@ -236,7 +236,7 @@ fun ChildModeScreen(
                     context.startActivity(intent)
                     Toast.makeText(
                         context,
-                        if (isHindi) "कृपया 'ParentGuard / FlashGet Kids' सेवा ढूंढें और चालू करें" else "Please find 'ParentGuard / FlashGet Kids' and turn ON",
+                        if (isHindi) "Accessibility / Downloaded apps में 'parent cantrol md - Child Guardian' को ON करें" else "In Accessibility / Downloaded apps, turn ON 'parent cantrol md - Child Guardian'",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -256,7 +256,7 @@ fun ChildModeScreen(
                     context.startActivity(intent)
                     Toast.makeText(
                         context,
-                        if (isHindi) "सूची में 'ParentGuard' पर टैप करके 'Allow' करें" else "Tap 'ParentGuard' and enable 'Permit usage access'",
+                        if (isHindi) "सूची में 'parent cantrol md' पर टैप करके 'Allow' करें" else "Tap 'parent cantrol md' and enable 'Permit usage access'",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -271,6 +271,11 @@ fun ChildModeScreen(
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
                     context.startActivity(intent)
+                    Toast.makeText(
+                        context,
+                        if (isHindi) "सूची में 'parent cantrol md - Social Alert Sync' को Allow करें" else "In list, allow 'parent cantrol md - Social Alert Sync'",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
                 PermissionActionType.APP_SETTINGS -> {
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -600,6 +605,61 @@ fun ChildModeScreen(
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF6C5CE7)
                 )
+            }
+        }
+
+        if (!allGranted) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF4E5)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFB048))
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Security, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isHindi) "अगर 'Restricted setting' या ऐप का नाम न दिखे:" else "If 'Restricted setting' or app is missing:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFFE65100)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (isHindi) 
+                                "1. नीचे बटन दबाकर 'App Info' खोलें\n2. ऊपर दाएँ कोने में 3 डॉट्स (⋮) दबाएं\n3. 'Allow restricted settings' पर टैप करके फोन लॉक खोलें\n4. वापस आकर सभी अनुमतियों को चालू करें।"
+                                else "1. Tap button below to open App Info\n2. Tap 3-dots (⋮) in top right corner\n3. Tap 'Allow restricted settings' and unlock phone\n4. Return here to enable permissions.",
+                            fontSize = 11.sp,
+                            color = Color(0xFF5D4037),
+                            lineHeight = 16.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = Uri.fromParts("package", context.packageName, null)
+                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {}
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = if (isHindi) "ऐप सेटिंग्स खोलें (Unblock Restricted Settings)" else "Open App Info Settings",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
             }
         }
 

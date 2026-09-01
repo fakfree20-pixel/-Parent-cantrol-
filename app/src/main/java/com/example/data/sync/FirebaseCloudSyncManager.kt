@@ -124,14 +124,30 @@ object FirebaseCloudSyncManager {
         pairingCode: String = "9839247105",
         onDeviceUpdate: (Map<String, Any>) -> Unit
     ) {
-        // Run auth in background since this isn't a suspend function, 
-        // but it doesn't matter much for snapshot listener which reconnects.
         val db = firestore ?: return
         stopListening()
         
         try {
             FirebaseAuth.getInstance().signInAnonymously()
         } catch(e: Exception) {}
+
+        // Immediate direct fetch
+        try {
+            db.collection(COLLECTION_DEVICES)
+                .document(pairingCode)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    if (snapshot != null && snapshot.exists()) {
+                        val data = snapshot.data
+                        if (data != null) {
+                            Log.d(TAG, "Direct fetch found device data for $pairingCode")
+                            onDeviceUpdate(data)
+                        }
+                    }
+                }
+        } catch (e: Exception) {
+            Log.w(TAG, "Direct fetch failed: ${e.message}")
+        }
 
         try {
             activeDeviceListener = db.collection(COLLECTION_DEVICES)
@@ -144,12 +160,28 @@ object FirebaseCloudSyncManager {
                     if (snapshot != null && snapshot.exists()) {
                         val data = snapshot.data
                         if (data != null) {
+                            Log.d(TAG, "Snapshot update for $pairingCode")
                             onDeviceUpdate(data)
                         }
                     }
                 }
         } catch (e: Exception) {
             Log.w(TAG, "Could not attach snapshot listener: ${e.message}")
+        }
+    }
+
+    /**
+     * Directly fetch Child device data from Firestore
+     */
+    suspend fun fetchChildDeviceDirectly(pairingCode: String): Map<String, Any>? {
+        ensureAuthenticated()
+        val db = firestore ?: return null
+        return try {
+            val snapshot = db.collection(COLLECTION_DEVICES).document(pairingCode).get().await()
+            if (snapshot.exists()) snapshot.data else null
+        } catch (e: Exception) {
+            Log.w(TAG, "fetchChildDeviceDirectly error: ${e.message}")
+            null
         }
     }
 

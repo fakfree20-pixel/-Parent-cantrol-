@@ -325,7 +325,7 @@ fun ChildPermissionSetupDialog(
                     context.startActivity(intent)
                     Toast.makeText(
                         context,
-                        if (isHindi) "सेटिंग्स में 'parent cantrol md' या 'ParentGuard' खोजकर ON करें" else "Find 'parent cantrol md' and turn it ON",
+                        if (isHindi) "Accessibility / Downloaded apps में 'parent cantrol md - Child Guardian' को ON करें" else "In Accessibility / Downloaded apps, turn ON 'parent cantrol md - Child Guardian'",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -347,7 +347,7 @@ fun ChildPermissionSetupDialog(
                     context.startActivity(intent)
                     Toast.makeText(
                         context,
-                        if (isHindi) "सूची में ऐप को खोजकर 'अनुमति दें' (Allow) करें" else "Select app and Allow Usage Access",
+                        if (isHindi) "सूची में 'parent cantrol md' को खोजकर 'Allow' करें" else "Select 'parent cantrol md' and allow Usage Access",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -372,6 +372,11 @@ fun ChildPermissionSetupDialog(
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
                     context.startActivity(intent)
+                    Toast.makeText(
+                        context,
+                        if (isHindi) "सूची में 'parent cantrol md - Social Alert Sync' को Allow करें" else "In list, allow 'parent cantrol md - Social Alert Sync'",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
                 PermissionActionType.APP_SETTINGS -> {
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {

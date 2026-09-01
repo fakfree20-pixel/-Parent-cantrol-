@@ -510,7 +510,7 @@ fun DashboardScreen(
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Text(
-                                        text = "🔋 69%",
+                                        text = "🔋 ${child.batteryPercent}%",
                                         fontSize = 12.sp,
                                         color = Color.White.copy(alpha = 0.95f),
                                         fontWeight = FontWeight.Medium
@@ -531,7 +531,7 @@ fun DashboardScreen(
                                                 Spacer(modifier = Modifier.width(10.dp))
                                                 Column {
                                                     Text(profile.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                                    Text("${profile.deviceModel} • 🔋 69%", fontSize = 11.sp, color = Color.Gray)
+                                                    Text("${profile.deviceModel} • 🔋 ${profile.batteryPercent}%", fontSize = 11.sp, color = Color.Gray)
                                                 }
                                             }
                                         },
@@ -677,6 +677,24 @@ fun DashboardScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
+                            Button(
+                                onClick = {
+                                    onSyncCloud()
+                                    Toast.makeText(
+                                        context,
+                                        if (isHindi) "☁️ कनेक्शन चेक किया जा रहा है..." else "☁️ Checking cloud connection...",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2ED573)),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.Sync, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(if (isHindi) "सिंक चेक करें" else "Check Connection", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+
                             Button(
                                 onClick = { showPairDeviceDialog = true },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
