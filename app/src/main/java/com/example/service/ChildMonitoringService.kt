@@ -70,23 +70,43 @@ class ChildMonitoringService : Service() {
                     if (!pairingCode.isNullOrBlank()) {
                         val batteryPercent = getBatteryPercentage()
                         val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"
+                        val isLocked = prefs.getBoolean("is_locked", false)
+                        val blockAllApps = prefs.getBoolean("block_all_apps", false)
 
                         val db = FirebaseFirestore.getInstance()
                         val updateMap = mapOf(
                             "batteryPercent" to batteryPercent,
                             "deviceName" to deviceModel,
                             "isDeviceOnline" to true,
+                            "isLocked" to isLocked,
+                            "blockAllApps" to blockAllApps,
                             "lastSeenTimestamp" to System.currentTimeMillis()
                         )
 
-                        db.collection("paired_devices").document(pairingCode)
-                            .set(updateMap, SetOptions.merge())
-                        Log.d("ChildMonitoringService", "Synced telemetry to code: $pairingCode (Battery: $batteryPercent%)")
+                        val docRef = db.collection("paired_devices").document(pairingCode)
+                        docRef.set(updateMap, SetOptions.merge())
+
+                        // Also fetch remote commands/status instantly
+                        docRef.get().addOnSuccessListener { snapshot ->
+                            if (snapshot != null && snapshot.exists()) {
+                                val remoteLocked = snapshot.getBoolean("isLocked") ?: isLocked
+                                val remoteBlockAll = snapshot.getBoolean("blockAllApps") ?: blockAllApps
+                                if (remoteLocked != isLocked || remoteBlockAll != blockAllApps) {
+                                    prefs.edit()
+                                        .putBoolean("is_locked", remoteLocked)
+                                        .putBoolean("block_all_apps", remoteBlockAll)
+                                        .apply()
+                                    Log.d("ChildMonitoringService", "Remote state applied: locked=$remoteLocked, blockAll=$remoteBlockAll")
+                                }
+                            }
+                        }
+
+                        Log.d("ChildMonitoringService", "Synced telemetry to code: $pairingCode (Battery: $batteryPercent%, Locked: $isLocked)")
                     }
                 } catch (e: Exception) {
                     Log.w("ChildMonitoringService", "Sync error: ${e.message}")
                 }
-                delay(30000) // Update every 30 seconds
+                delay(3000) // Super-fast 3 second sync interval
             }
         }
     }

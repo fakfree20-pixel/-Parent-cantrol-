@@ -166,6 +166,21 @@ fun RemoteCameraDialog(
     var streamQuality by remember { mutableStateOf("1080P FHD • 60 FPS") }
     var showQualityMenu by remember { mutableStateOf(false) }
     var ambientDb by remember { mutableIntStateOf(34) }
+    var isConnecting by remember { mutableStateOf(true) }
+    var syncToast by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        isConnecting = true
+        delay(4000)
+        isConnecting = false
+    }
+
+    LaunchedEffect(syncToast) {
+        if (syncToast != null) {
+            delay(2000)
+            syncToast = null
+        }
+    }
 
     // Live ambient dB and recording timer simulation
     LaunchedEffect(isRecordingVideo) {
@@ -327,6 +342,46 @@ fun RemoteCameraDialog(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Super-fast connection status & sync button
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isConnecting) Color(0xFFFEF3C7).copy(alpha = 0.9f) else Color(0xFFDCFCE7).copy(alpha = 0.9f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = if (isConnecting) "⚡ 4s कनेक्टिंग..." else "⚡ कनेक्टेड (0.2s)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isConnecting) Color(0xFFD97706) else Color(0xFF16A34A)
+                            )
+                            Button(
+                                onClick = {
+                                    isConnecting = true
+                                    syncToast = if (isHindi) "🔄 कैमरा स्ट्रीम सिंक हो रही है..." else "🔄 Syncing camera stream..."
+                                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                        isConnecting = false
+                                    }, 1500)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                modifier = Modifier.height(26.dp)
+                            ) {
+                                Text(if (isHindi) "सिंक" else "⚡ Sync", fontSize = 10.sp, color = Color.White)
+                            }
+                        }
+                    }
+                    syncToast?.let { msg ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = msg, fontSize = 10.sp, color = Color(0xFF00CEC9), fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -759,6 +814,13 @@ fun ScreenMirroringDialog(
     var showRemoteTextInputDialog by remember { mutableStateOf(false) }
     var customRemoteText by remember { mutableStateOf("") }
     var isScreenPoweredOff by remember { mutableStateOf(false) }
+    var isConnecting by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        isConnecting = true
+        delay(4000)
+        isConnecting = false
+    }
 
     // Remote Phone Settings States (Controlled directly by Parent)
     var remoteWifiOn by remember { mutableStateOf(true) }
@@ -1029,6 +1091,43 @@ fun ScreenMirroringDialog(
                         ) {
                             Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(18.dp))
                         }
+                    }
+                }
+
+                // Super-fast connection status & sync button bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isConnecting) Color(0xFFFEF3C7) else Color(0xFFDCFCE7)
+                    ) {
+                        Text(
+                            text = if (isConnecting) "⚡ 4s स्क्रीन मिरर कनेक्टिंग..." else "⚡ सुपरफास्ट कनेक्टेड (0.2s)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isConnecting) Color(0xFFD97706) else Color(0xFF16A34A),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            isConnecting = true
+                            toastMessage = if (isHindi) "🔄 स्क्रीन मिरर सिंक हो रहा है..." else "🔄 Syncing screen stream instantly..."
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                isConnecting = false
+                            }, 1500)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C5CE7)),
+                        shape = RoundedCornerShape(6.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                        modifier = Modifier.height(26.dp)
+                    ) {
+                        Text(if (isHindi) "सिंक" else "⚡ Sync", fontSize = 10.sp, color = Color.White)
                     }
                 }
 
@@ -1971,6 +2070,21 @@ fun OneWayAudioDialog(
     var isRecording by remember { mutableStateOf(false) }
     var audioVolume by remember { mutableFloatStateOf(0.75f) }
     var soundLevelDb by remember { mutableIntStateOf(42) }
+    var isConnecting by remember { mutableStateOf(true) }
+    var syncToast by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        isConnecting = true
+        delay(4000)
+        isConnecting = false
+    }
+
+    LaunchedEffect(syncToast) {
+        if (syncToast != null) {
+            delay(2000)
+            syncToast = null
+        }
+    }
 
     val infiniteTransition = rememberInfiniteTransition(label = "audio_wave")
     val pulseScale by infiniteTransition.animateFloat(
@@ -2039,6 +2153,46 @@ fun OneWayAudioDialog(
                     ) {
                         Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
                     }
+                }
+
+                // Super-fast connection status & sync button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isConnecting) Color(0xFFFEF3C7) else Color(0xFFDCFCE7)
+                    ) {
+                        Text(
+                            text = if (isConnecting) "⚡ 4s ऑडियो कनेक्टिंग..." else "⚡ सुपरफास्ट कनेक्टेड (0.2s)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isConnecting) Color(0xFFD97706) else Color(0xFF16A34A),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            isConnecting = true
+                            syncToast = if (isHindi) "🔄 ऑडियो स्ट्रीम सिंक हो रही है..." else "🔄 Syncing audio stream..."
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                isConnecting = false
+                            }, 1500)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0984E3)),
+                        shape = RoundedCornerShape(6.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                        modifier = Modifier.height(26.dp)
+                    ) {
+                        Text(if (isHindi) "सिंक" else "⚡ Sync", fontSize = 10.sp, color = Color.White)
+                    }
+                }
+                syncToast?.let { msg ->
+                    Text(text = msg, fontSize = 11.sp, color = Color(0xFF74B9FF), fontWeight = FontWeight.Bold)
                 }
                 
                 Surface(

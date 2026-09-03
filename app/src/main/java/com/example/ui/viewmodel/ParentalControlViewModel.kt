@@ -290,6 +290,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
     }
 
     private var parentPollJob: Job? = null
+    private var childPollJob: Job? = null
 
     private fun initFirebaseSync() {
         val codeToListen = if (_isChildModeActive.value) _childPairingCode.value else _parentPairingCode.value
@@ -304,14 +305,16 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                     val battery = (data["batteryPercent"] as? Number)?.toInt() ?: 90
                     val isLocked = data["isLocked"] as? Boolean ?: false
                     val isOnline = data["isDeviceOnline"] as? Boolean ?: true
+                    val blockAllApps = data["blockAllApps"] as? Boolean ?: false
 
                     if (profiles.isNotEmpty()) {
                         val currentChild = activeChildProfile.value ?: profiles.first()
-                        if (isLocked != currentChild.isLocked || battery != currentChild.batteryPercent || isOnline != currentChild.isDeviceOnline || deviceName != currentChild.deviceModel) {
+                        if (isLocked != currentChild.isLocked || blockAllApps != currentChild.blockAllApps || battery != currentChild.batteryPercent || isOnline != currentChild.isDeviceOnline || deviceName != currentChild.deviceModel) {
                             repository.updateChildProfile(
                                 currentChild.copy(
                                     deviceModel = deviceName,
                                     isLocked = isLocked,
+                                    blockAllApps = blockAllApps,
                                     batteryPercent = battery,
                                     isDeviceOnline = isOnline
                                 )
@@ -326,7 +329,8 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                             deviceModel = deviceName,
                             batteryPercent = battery,
                             isDeviceOnline = isOnline,
-                            isLocked = isLocked
+                            isLocked = isLocked,
+                            blockAllApps = blockAllApps
                         ))
                         _selectedChildId.value = newId
                     }
@@ -335,6 +339,8 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
 
             if (!_isChildModeActive.value) {
                 startParentCloudPolling(codeToListen)
+            } else {
+                startChildCloudPolling(codeToListen)
             }
         }
     }
@@ -354,16 +360,18 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                         val battery = (data["batteryPercent"] as? Number)?.toInt() ?: 90
                         val isLocked = data["isLocked"] as? Boolean ?: false
                         val isOnline = data["isDeviceOnline"] as? Boolean ?: true
+                        val blockAllApps = data["blockAllApps"] as? Boolean ?: false
 
                         if (profiles.isNotEmpty()) {
                             val currentChild = activeChildProfile.value ?: profiles.first()
-                            if (battery != currentChild.batteryPercent || isOnline != currentChild.isDeviceOnline || deviceName != currentChild.deviceModel || isLocked != currentChild.isLocked) {
+                            if (battery != currentChild.batteryPercent || isOnline != currentChild.isDeviceOnline || deviceName != currentChild.deviceModel || isLocked != currentChild.isLocked || blockAllApps != currentChild.blockAllApps) {
                                 repository.updateChildProfile(
                                     currentChild.copy(
                                         deviceModel = deviceName,
                                         batteryPercent = battery,
                                         isDeviceOnline = isOnline,
-                                        isLocked = isLocked
+                                        isLocked = isLocked,
+                                        blockAllApps = blockAllApps
                                     )
                                 )
                             }
@@ -375,7 +383,8 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                                 deviceModel = deviceName,
                                 batteryPercent = battery,
                                 isDeviceOnline = isOnline,
-                                isLocked = isLocked
+                                isLocked = isLocked,
+                                blockAllApps = blockAllApps
                             ))
                             _selectedChildId.value = newId
                         }
@@ -384,6 +393,44 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                     Log.w("ParentViewModel", "Cloud poll error: ${e.message}")
                 }
                 delay(6000) // Poll every 6 seconds
+            }
+        }
+    }
+
+    private fun startChildCloudPolling(pairingCode: String) {
+        childPollJob?.cancel()
+        childPollJob = viewModelScope.launch {
+            while (isActive) {
+                try {
+                    val data = FirebaseCloudSyncManager.fetchChildDeviceDirectly(pairingCode)
+                    if (data != null) {
+                        _lastCloudSyncTime.value = System.currentTimeMillis()
+                        _isCloudConnected.value = true
+                        val profiles = allChildProfiles.value
+                        val isLocked = data["isLocked"] as? Boolean ?: false
+                        val blockAllApps = data["blockAllApps"] as? Boolean ?: false
+
+                        prefs.edit()
+                            .putBoolean("is_locked", isLocked)
+                            .putBoolean("block_all_apps", blockAllApps)
+                            .apply()
+
+                        if (profiles.isNotEmpty()) {
+                            val currentChild = activeChildProfile.value ?: profiles.first()
+                            if (isLocked != currentChild.isLocked || blockAllApps != currentChild.blockAllApps) {
+                                repository.updateChildProfile(
+                                    currentChild.copy(
+                                        isLocked = isLocked,
+                                        blockAllApps = blockAllApps
+                                    )
+                                )
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w("ChildViewModel", "Child cloud poll error: ${e.message}")
+                }
+                delay(3000) // Poll every 3 seconds for super-fast reaction time
             }
         }
     }
@@ -399,6 +446,10 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                         FirebaseCloudSyncManager.syncChildProfileToCloud(child, codeToUse)
                     }
                 } else {
+                    val child = activeChildProfile.value
+                    if (child != null) {
+                        FirebaseCloudSyncManager.syncChildProfileToCloud(child, codeToUse)
+                    }
                     val cloudData = FirebaseCloudSyncManager.fetchChildDeviceDirectly(codeToUse)
                     if (cloudData != null) {
                         val profiles = allChildProfiles.value
@@ -407,6 +458,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                         val battery = (cloudData["batteryPercent"] as? Number)?.toInt() ?: 90
                         val isLocked = cloudData["isLocked"] as? Boolean ?: false
                         val isOnline = cloudData["isDeviceOnline"] as? Boolean ?: true
+                        val blockAllApps = cloudData["blockAllApps"] as? Boolean ?: false
 
                         if (profiles.isNotEmpty()) {
                             val currentChild = activeChildProfile.value ?: profiles.first()
@@ -415,7 +467,8 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                                     deviceModel = deviceName,
                                     batteryPercent = battery,
                                     isDeviceOnline = isOnline,
-                                    isLocked = isLocked
+                                    isLocked = isLocked,
+                                    blockAllApps = blockAllApps
                                 )
                             )
                         } else {
@@ -426,7 +479,8 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                                 deviceModel = deviceName,
                                 batteryPercent = battery,
                                 isDeviceOnline = isOnline,
-                                isLocked = isLocked
+                                isLocked = isLocked,
+                                blockAllApps = blockAllApps
                             ))
                             _selectedChildId.value = newId
                         }
