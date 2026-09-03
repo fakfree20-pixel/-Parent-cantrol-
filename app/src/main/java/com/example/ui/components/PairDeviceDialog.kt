@@ -36,7 +36,7 @@ fun PairDeviceDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val downloadLink = "https://ais-dev-c6tplr6aasw3eq4nllohfm-257389990740.europe-west2.run.app/download"
+    val downloadLink = "https://ais-dev-c6tplr6aasw3eq4nllohfm-257389990740.europe-west2.run.app/?code=$pairingCode"
     var copiedCode by remember { mutableStateOf(false) }
     var copiedLink by remember { mutableStateOf(false) }
 
@@ -94,7 +94,7 @@ fun PairDeviceDialog(
 
                 Text(
                     text = if (isHindi) 
-                        "FlashGet Kids की तरह अपने बच्चे के फोन को जोड़ने के लिए नीचे दिए गए QR कोड को स्कैन करें या 10-अंकों का कोड डालें:" 
+                        "Parent Control MD ऐप से अपने बच्चे के फोन को जोड़ने के लिए नीचे दिए गए QR कोड को स्कैन करें या 10-अंकों का कोड डालें:" 
                         else "Scan the QR code or enter the 10-digit code on the child's phone to connect:",
                     fontSize = 13.sp,
                     color = NaturalTextSecondary,
@@ -141,7 +141,7 @@ fun PairDeviceDialog(
                                     }
                                 }
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                                    Text("⚡ FLASHGET ⚡", fontSize = 7.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF6C5CE7))
+                                    Text("⚡ PARENT MD ⚡", fontSize = 7.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF6C5CE7))
                                 }
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Box(modifier = Modifier.size(24.dp).background(Color(0xFF2D1E5E), RoundedCornerShape(4.dp)).padding(4.dp)) {
@@ -252,7 +252,7 @@ fun PairDeviceDialog(
                                 onClick = {
                                     val sendIntent = android.content.Intent().apply {
                                         action = android.content.Intent.ACTION_SEND
-                                        putExtra(android.content.Intent.EXTRA_TEXT, "FlashGet Kids शैली में पैरेंट कंट्रोल ऐप डाउनलोड करें और यह कोड दर्ज करें: $pairingCode \nलिंक: $downloadLink")
+                                        putExtra(android.content.Intent.EXTRA_TEXT, "Parent Control MD ऐप डाउनलोड करें और यह कोड दर्ज करें: $pairingCode \nलिंक: $downloadLink")
                                         type = "text/plain"
                                     }
                                     val shareIntent = android.content.Intent.createChooser(sendIntent, null)

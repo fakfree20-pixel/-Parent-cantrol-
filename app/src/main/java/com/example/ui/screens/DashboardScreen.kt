@@ -650,7 +650,7 @@ fun DashboardScreen(
                                         color = Color(0xFF281D5E)
                                     )
                                     Text(
-                                        text = "https://kids.flashget.com/child-apk?code=$pairingCode",
+                                        text = "https://ais-dev-c6tplr6aasw3eq4nllohfm-257389990740.europe-west2.run.app/?code=$pairingCode",
                                         fontSize = 11.sp,
                                         color = Color(0xFF6C5CE7),
                                         maxLines = 1,
@@ -713,9 +713,9 @@ fun DashboardScreen(
                                         putExtra(
                                             Intent.EXTRA_TEXT,
                                             if (isHindi)
-                                                "FlashGet Kids: अपने फोन में चाइल्ड ऐप डाउनलोड करें: https://kids.flashget.com/child-apk?code=$pairingCode\nकनेक्शन कोड दर्ज करें: $pairingCode"
+                                                "Parent Control MD: ऐप डाउनलोड करें: https://ais-dev-c6tplr6aasw3eq4nllohfm-257389990740.europe-west2.run.app/?code=$pairingCode\nकोड: $pairingCode"
                                             else
-                                                "Download FlashGet Kids Child APK: https://kids.flashget.com/child-apk?code=$pairingCode\nEnter Pairing Code: $pairingCode"
+                                                "Download Parent Control MD: https://ais-dev-c6tplr6aasw3eq4nllohfm-257389990740.europe-west2.run.app/?code=$pairingCode\nCode: $pairingCode"
                                         )
                                         type = "text/plain"
                                     }
