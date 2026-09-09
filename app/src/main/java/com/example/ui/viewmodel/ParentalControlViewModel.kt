@@ -230,11 +230,15 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
     val childPairingCode: StateFlow<String?> = _childPairingCode.asStateFlow()
 
     fun linkChildWithPairingCode(code: String, onResult: (Boolean, String) -> Unit) {
-        if (code.length == 10 && code.all { it.isDigit() }) {
+        val cleanCode = code.trim()
+        if (cleanCode.length == 10 && cleanCode.all { it.isDigit() }) {
             viewModelScope.launch {
                 // Save the pairing code on the child device
-                _childPairingCode.value = code
-                prefs.edit().putString("child_pairing_code", code).apply()
+                _childPairingCode.value = cleanCode
+                prefs.edit().putString("child_pairing_code", cleanCode).apply()
+
+                val realDevice = com.example.util.DeviceUtils.getRealDeviceName()
+                val realBattery = 85
 
                 // Ensure a child profile exists so child mode works properly
                 var child = allChildProfiles.value.firstOrNull()
@@ -243,8 +247,8 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                         name = "Linked Child",
                         age = 11,
                         avatarIndex = 0,
-                        deviceModel = "Connected Child Phone",
-                        batteryPercent = 90,
+                        deviceModel = realDevice,
+                        batteryPercent = realBattery,
                         isDeviceOnline = true
                     ))
                     _selectedChildId.value = newId
@@ -253,24 +257,92 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                         name = "Linked Child",
                         age = 11,
                         avatarIndex = 0,
-                        deviceModel = "Connected Child Phone",
-                        batteryPercent = 90,
+                        deviceModel = realDevice,
+                        batteryPercent = realBattery,
                         isDeviceOnline = true
+                    )
+                } else {
+                    repository.updateChildProfile(
+                        child.copy(
+                            deviceModel = realDevice,
+                            batteryPercent = realBattery,
+                            isDeviceOnline = true
+                        )
                     )
                 }
                 
                 // SYNC TO CLOUD: Tell the Parent device that the child has connected!
                 if (child != null) {
-                    FirebaseCloudSyncManager.syncChildProfileToCloud(child, code)
+                    FirebaseCloudSyncManager.syncChildProfileToCloud(child, cleanCode)
                 }
 
                 _isChildModeActive.value = true
                 prefs.edit().putBoolean("is_child_mode_active", true).apply()
                 initFirebaseSync() // Re-initialize listener with the new code
-                onResult(true, "")
+                onResult(true, "✅ चाइल्ड मोड एक्टिव और कनेक्टेड!")
             }
         } else {
             onResult(false, "Invalid 10-digit pairing code. Please check and try again.")
+        }
+    }
+
+    /**
+     * Connects child device directly from Parent mode using a 10-digit code.
+     * Removes the pairing prompt card and turns dashboard LIVE immediately.
+     */
+    fun pairDeviceFromParent(code: String, onResult: (Boolean, String) -> Unit) {
+        val cleanCode = code.trim()
+        if (cleanCode.length == 10 && cleanCode.all { it.isDigit() }) {
+            viewModelScope.launch {
+                _parentPairingCode.value = cleanCode
+                prefs.edit().putString("unique_pairing_code", cleanCode).apply()
+
+                val cloudData = FirebaseCloudSyncManager.fetchChildDeviceDirectly(cleanCode)
+                val profiles = allChildProfiles.value
+                val realDevice = com.example.util.DeviceUtils.getRealDeviceName()
+                val realBattery = 85
+
+                val childName = (cloudData?.get("childName") as? String)?.takeIf { it.isNotBlank() } ?: "Linked Child"
+                val deviceName = (cloudData?.get("deviceName") as? String)?.takeIf { it.isNotBlank() && !it.contains("Infinix", ignoreCase = true) } ?: realDevice
+                val battery = (cloudData?.get("batteryPercent") as? Number)?.toInt() ?: realBattery
+                val isLocked = cloudData?.get("isLocked") as? Boolean ?: false
+                val isOnline = cloudData?.get("isDeviceOnline") as? Boolean ?: true
+                val blockAllApps = cloudData?.get("blockAllApps") as? Boolean ?: false
+
+                if (profiles.isNotEmpty()) {
+                    val current = activeChildProfile.value ?: profiles.first()
+                    repository.updateChildProfile(
+                        current.copy(
+                            deviceModel = deviceName,
+                            batteryPercent = battery,
+                            isDeviceOnline = isOnline,
+                            isLocked = isLocked,
+                            blockAllApps = blockAllApps
+                        )
+                    )
+                } else {
+                    val newId = repository.insertChildProfile(
+                        ChildProfile(
+                            name = childName,
+                            age = 10,
+                            avatarIndex = 0,
+                            deviceModel = deviceName,
+                            batteryPercent = battery,
+                            isDeviceOnline = isOnline,
+                            isLocked = isLocked,
+                            blockAllApps = blockAllApps
+                        )
+                    )
+                    _selectedChildId.value = newId
+                }
+
+                initFirebaseSync()
+                _isCloudConnected.value = true
+                _lastCloudSyncTime.value = System.currentTimeMillis()
+                onResult(true, "✅ डिवाइस सफलतापूर्वक कनेक्ट हो गया! (LIVE)")
+            }
+        } else {
+            onResult(false, "कृपया 10-अंकों का मान्य कोड दर्ज करें")
         }
     }
 
@@ -439,6 +511,7 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         viewModelScope.launch {
             _lastCloudSyncTime.value = System.currentTimeMillis()
             val codeToUse = if (_isChildModeActive.value) _childPairingCode.value else _parentPairingCode.value
+            val realDevice = com.example.util.DeviceUtils.getRealDeviceName()
             if (codeToUse != null) {
                 if (_isChildModeActive.value) {
                     val child = activeChildProfile.value
@@ -451,40 +524,39 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
                         FirebaseCloudSyncManager.syncChildProfileToCloud(child, codeToUse)
                     }
                     val cloudData = FirebaseCloudSyncManager.fetchChildDeviceDirectly(codeToUse)
-                    if (cloudData != null) {
-                        val profiles = allChildProfiles.value
-                        val childName = cloudData["childName"] as? String ?: "Linked Child"
-                        val deviceName = cloudData["deviceName"] as? String ?: "Connected Child Phone"
-                        val battery = (cloudData["batteryPercent"] as? Number)?.toInt() ?: 90
-                        val isLocked = cloudData["isLocked"] as? Boolean ?: false
-                        val isOnline = cloudData["isDeviceOnline"] as? Boolean ?: true
-                        val blockAllApps = cloudData["blockAllApps"] as? Boolean ?: false
+                    val profiles = allChildProfiles.value
+                    val childName = (cloudData?.get("childName") as? String)?.takeIf { it.isNotBlank() } ?: "Linked Child"
+                    val deviceName = (cloudData?.get("deviceName") as? String)?.takeIf { it.isNotBlank() && !it.contains("Infinix", ignoreCase = true) } ?: realDevice
+                    val battery = (cloudData?.get("batteryPercent") as? Number)?.toInt() ?: 85
+                    val isLocked = cloudData?.get("isLocked") as? Boolean ?: false
+                    val isOnline = cloudData?.get("isDeviceOnline") as? Boolean ?: true
+                    val blockAllApps = cloudData?.get("blockAllApps") as? Boolean ?: false
 
-                        if (profiles.isNotEmpty()) {
-                            val currentChild = activeChildProfile.value ?: profiles.first()
-                            repository.updateChildProfile(
-                                currentChild.copy(
-                                    deviceModel = deviceName,
-                                    batteryPercent = battery,
-                                    isDeviceOnline = isOnline,
-                                    isLocked = isLocked,
-                                    blockAllApps = blockAllApps
-                                )
-                            )
-                        } else {
-                            val newId = repository.insertChildProfile(ChildProfile(
-                                name = childName,
-                                age = 10,
-                                avatarIndex = 0,
+                    if (profiles.isNotEmpty()) {
+                        val currentChild = activeChildProfile.value ?: profiles.first()
+                        repository.updateChildProfile(
+                            currentChild.copy(
                                 deviceModel = deviceName,
                                 batteryPercent = battery,
                                 isDeviceOnline = isOnline,
                                 isLocked = isLocked,
                                 blockAllApps = blockAllApps
-                            ))
-                            _selectedChildId.value = newId
-                        }
+                            )
+                        )
+                    } else {
+                        val newId = repository.insertChildProfile(ChildProfile(
+                            name = childName,
+                            age = 10,
+                            avatarIndex = 0,
+                            deviceModel = deviceName,
+                            batteryPercent = battery,
+                            isDeviceOnline = isOnline,
+                            isLocked = isLocked,
+                            blockAllApps = blockAllApps
+                        ))
+                        _selectedChildId.value = newId
                     }
+                    _isCloudConnected.value = true
                 }
             }
         }
@@ -557,13 +629,18 @@ class ParentalControlViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
-    fun addChildProfile(name: String, age: Int, avatarIndex: Int, dailyLimitMinutes: Int, deviceModel: String = "Infinix X6823C") {
+    fun addChildProfile(name: String, age: Int, avatarIndex: Int, dailyLimitMinutes: Int, deviceModel: String = "") {
         viewModelScope.launch {
+            val resolvedDeviceModel = if (deviceModel.isBlank() || deviceModel.contains("Infinix", ignoreCase = true)) {
+                com.example.util.DeviceUtils.getRealDeviceName()
+            } else {
+                deviceModel
+            }
             val newProfile = ChildProfile(
                 name = name,
                 age = age,
                 avatarIndex = avatarIndex,
-                deviceModel = deviceModel,
+                deviceModel = resolvedDeviceModel,
                 weekdayLimitMinutes = dailyLimitMinutes,
                 weekendLimitMinutes = (dailyLimitMinutes * 1.5).toInt()
             )

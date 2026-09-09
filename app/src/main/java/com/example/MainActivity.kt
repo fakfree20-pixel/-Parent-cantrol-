@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -142,6 +143,7 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
     val selectedAppRole by viewModel.appRole.collectAsStateWithLifecycle()
 
     val isHindi = currentLang == "hi"
+    val context = LocalContext.current
 
     var showAccountProfileDialog by remember { mutableStateOf(false) }
     var showSecurityPinDialog by remember { mutableStateOf(false) }
@@ -239,13 +241,15 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
         )
     }
 
+    val realDeviceName = com.example.util.DeviceUtils.getRealDeviceName(context)
+    val realBatteryPercent = com.example.util.DeviceUtils.getRealBatteryPercent(context)
     val child = activeChild ?: ChildProfile(
         id = 1,
-        name = "Aarav",
+        name = if (isHindi) "कनेक्टेड डिवाइस" else "Connected Device",
         age = 10,
         avatarIndex = 0,
-        deviceModel = "Infinix X6823C",
-        batteryPercent = 25,
+        deviceModel = realDeviceName,
+        batteryPercent = realBatteryPercent,
         isDeviceOnline = true,
         weekdayLimitMinutes = 120
     )
@@ -458,7 +462,12 @@ fun ParentGuardMainApp(viewModel: ParentalControlViewModel) {
                     pairingCode = parentPairingCode,
                     onRegeneratePairingCode = { viewModel.regeneratePairingCode() },
                     masterPin = masterPin,
-                    onChangePin = { viewModel.changePin(it) }
+                    onChangePin = { viewModel.changePin(it) },
+                    onPairWithCode = { code ->
+                        viewModel.pairDeviceFromParent(code) { success, msg ->
+                            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 )
 
                 // Tab 2: Me (Settings, Parent Account, Child Mode, Pin, Language)

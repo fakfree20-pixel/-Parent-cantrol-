@@ -9,7 +9,7 @@ data class ChildProfile(
     val name: String,
     val age: Int,
     val avatarIndex: Int = 0,
-    val deviceModel: String = "Infinix X6823C",
+    val deviceModel: String = "",
     val batteryPercent: Int = 86,
     val isDeviceOnline: Boolean = true,
     val blockAllApps: Boolean = false,

@@ -6,6 +6,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,12 +34,16 @@ import com.example.ui.theme.*
 fun PairDeviceDialog(
     pairingCode: String,
     isHindi: Boolean,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onRegenerateCode: (() -> Unit)? = null,
+    onPairWithCode: ((String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val downloadLink = "https://ais-dev-c6tplr6aasw3eq4nllohfm-257389990740.europe-west2.run.app/?code=$pairingCode"
     var copiedCode by remember { mutableStateOf(false) }
     var copiedLink by remember { mutableStateOf(false) }
+    var inputCode by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Share / QR, 1: Enter Code
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -92,18 +97,128 @@ fun PairDeviceDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = if (isHindi) 
-                        "Parent Control MD ऐप से अपने बच्चे के फोन को जोड़ने के लिए नीचे दिए गए QR कोड को स्कैन करें या 10-अंकों का कोड डालें:" 
-                        else "Scan the QR code or enter the 10-digit code on the child's phone to connect:",
-                    fontSize = 13.sp,
-                    color = NaturalTextSecondary,
-                    textAlign = TextAlign.Center
-                )
+                // Mode Tabs
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFEDE9FF))
+                        .padding(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (selectedTab == 0) Color(0xFF6C5CE7) else Color.Transparent)
+                            .clickable { selectedTab = 0 }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isHindi) "QR व कोड शेयर" else "Share Code",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = if (selectedTab == 0) Color.White else Color(0xFF2D1E5E)
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (selectedTab == 1) Color(0xFF6C5CE7) else Color.Transparent)
+                            .clickable { selectedTab = 1 }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isHindi) "कोड डालें व लिंक करें" else "Enter Code",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = if (selectedTab == 1) Color.White else Color(0xFF2D1E5E)
+                        )
+                    }
+                }
 
-                // FlashGet Style QR Code Box
+                Spacer(modifier = Modifier.height(14.dp))
+
+                if (selectedTab == 1) {
+                    // Enter 10-digit Code Directly
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFF4F1FD),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF6C5CE7), modifier = Modifier.size(36.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (isHindi) "बच्चे का कनेक्शन कोड डालें" else "Enter Child Pairing Code",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = Color(0xFF2D1E5E)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isHindi) "कोड डालते ही डैशबोर्ड तुरंत लाइव हो जाएगा और असली डिवाइस जुड़ जाएगा।" else "Entering code connects the device immediately and goes LIVE.",
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = inputCode,
+                                onValueChange = { if (it.length <= 10 && it.all { ch -> ch.isDigit() }) inputCode = it },
+                                label = { Text(if (isHindi) "10-डिजिट कोड" else "10-digit code") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFF6C5CE7),
+                                    unfocusedBorderColor = Color(0xFFCBD5E1)
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = {
+                                    if (inputCode.length == 10) {
+                                        onPairWithCode?.invoke(inputCode)
+                                        onDismiss()
+                                    } else {
+                                        Toast.makeText(context, if (isHindi) "कृपया पूरा 10-अंकों का कोड लिखें" else "Please enter full 10-digit code", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2ED573))
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isHindi) "⚡ अभी लिंक करें व लाइव हों" else "⚡ Connect & Go Live",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = if (isHindi) 
+                            "Parent Control MD ऐप से अपने बच्चे के फोन को जोड़ने के लिए नीचे दिए गए QR कोड को स्कैन करें या 10-अंकों का कोड डालें:" 
+                            else "Scan the QR code or enter the 10-digit code on the child's phone to connect:",
+                        fontSize = 13.sp,
+                        color = NaturalTextSecondary,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // FlashGet Style QR Code Box
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = Color.White,
@@ -267,6 +382,7 @@ fun PairDeviceDialog(
                             }
                         }
                     }
+                }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

@@ -68,6 +68,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.*
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
@@ -173,6 +174,7 @@ fun DashboardScreen(
     onRegeneratePairingCode: () -> Unit = {},
     masterPin: String = "1234",
     onChangePin: (String) -> Unit = {},
+    onPairWithCode: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -194,6 +196,7 @@ fun DashboardScreen(
     var showCallHistoryDialog by remember { mutableStateOf(false) }
     var showAntiUninstallDialog by remember { mutableStateOf(false) }
     var showSecurityPinDialog by remember { mutableStateOf(false) }
+    var directCodeInput by remember { mutableStateOf("") }
 
     // FlashGet New Feature Dialogs
     var showLivePaintingDialog by remember { mutableStateOf(false) }
@@ -367,7 +370,8 @@ fun DashboardScreen(
             onDismiss = { showPairDeviceDialog = false },
             isHindi = isHindi,
             pairingCode = pairingCode,
-            onRegenerateCode = onRegeneratePairingCode
+            onRegenerateCode = onRegeneratePairingCode,
+            onPairWithCode = onPairWithCode
         )
     }
 
@@ -478,7 +482,7 @@ fun DashboardScreen(
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = child.deviceModel.ifEmpty { "Infinix X6823C" },
+                                        text = child.deviceModel.ifEmpty { com.example.util.DeviceUtils.getRealDeviceName(context) },
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 17.sp,
                                         color = Color.White
@@ -660,13 +664,60 @@ fun DashboardScreen(
                                 IconButton(
                                     onClick = {
                                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        val clip = ClipData.newPlainText("Child APK Link", "https://kids.flashget.com/child-apk?code=$pairingCode")
+                                        val clip = ClipData.newPlainText("Child APK Link", "https://ais-dev-c6tplr6aasw3eq4nllohfm-257389990740.europe-west2.run.app/?code=$pairingCode")
                                         clipboard.setPrimaryClip(clip)
                                         Toast.makeText(context, if (isHindi) "डाउनलोड लिंक कॉपी हो गया!" else "Download link copied!", Toast.LENGTH_SHORT).show()
                                     },
                                     modifier = Modifier.size(32.dp)
                                 ) {
                                     Icon(Icons.Default.ContentCopy, contentDescription = "Copy Link", tint = Color(0xFF6C5CE7), modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Direct Enter 10-digit code & Go Live
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.White,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = if (isHindi) "⚡ बच्चे का 10-अंकों का कोड डालें व लाइव कनेक्ट करें:" else "⚡ Enter Child 10-Digit Code to Connect Live:",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF281D5E)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = directCodeInput,
+                                        onValueChange = { if (it.length <= 10 && it.all { ch -> ch.isDigit() }) directCodeInput = it },
+                                        placeholder = { Text(if (isHindi) "10-डिजिट कोड" else "10-digit code", fontSize = 12.sp) },
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    Button(
+                                        onClick = {
+                                            if (directCodeInput.length == 10) {
+                                                onPairWithCode?.invoke(directCodeInput)
+                                                Toast.makeText(context, if (isHindi) "डिवाइस लिंक हो रहा है..." else "Linking device...", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, if (isHindi) "कृपया 10-अंकों का कोड डालें" else "Please enter 10 digits", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2ED573)),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text(if (isHindi) "लाइव हों" else "Go Live", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
                                 }
                             }
                         }
@@ -679,10 +730,11 @@ fun DashboardScreen(
                         ) {
                             Button(
                                 onClick = {
+                                    onPairWithCode?.invoke(pairingCode)
                                     onSyncCloud()
                                     Toast.makeText(
                                         context,
-                                        if (isHindi) "☁️ कनेक्शन चेक किया जा रहा है..." else "☁️ Checking cloud connection...",
+                                        if (isHindi) "☁️ कनेक्शन चेक व सिंक किया जा रहा है..." else "☁️ Checking connection & syncing...",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 },
